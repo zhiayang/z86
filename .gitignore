@@ -1,0 +1,9 @@
+a.out
+build/
+*.sublime-*
+*.cpp.o
+*.c.o
+*.cpp.d
+*.c.d
+*.h.d
+*.h.gch
