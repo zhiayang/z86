@@ -41,30 +41,31 @@ namespace instrad::x86
 		constexpr int REG_FLAG_X87      = 0x0800;
 		constexpr int REG_FLAG_MMX      = 0x1000;
 		constexpr int REG_FLAG_SSE      = 0x2000;
+		constexpr int REG_FLAG_HI_BYTE  = 0x4000;
 
 		constexpr auto  AL      = Register(0,  8,  "al", 0);
-		constexpr auto  AH      = Register(0,  8,  "ah", 1);
-		constexpr auto  AX      = Register(0, 16,  "ax", 2);
-		constexpr auto EAX      = Register(0, 32, "eax", 3);
-		constexpr auto RAX      = Register(0, 64, "rax", 4);
+		constexpr auto  AX      = Register(0, 16,  "ax", 1);
+		constexpr auto EAX      = Register(0, 32, "eax", 2);
+		constexpr auto RAX      = Register(0, 64, "rax", 3);
+		constexpr auto  AH      = Register(REG_FLAG_HI_BYTE | 0,  8,  "ah", 4);
 
 		constexpr auto  CL      = Register(1,  8,  "cl", 5);
-		constexpr auto  CH      = Register(1,  8,  "ch", 6);
-		constexpr auto  CX      = Register(1, 16,  "cx", 7);
-		constexpr auto ECX      = Register(1, 32, "ecx", 8);
-		constexpr auto RCX      = Register(1, 64, "rcx", 9);
+		constexpr auto  CX      = Register(1, 16,  "cx", 6);
+		constexpr auto ECX      = Register(1, 32, "ecx", 7);
+		constexpr auto RCX      = Register(1, 64, "rcx", 8);
+		constexpr auto  CH      = Register(REG_FLAG_HI_BYTE | 1,  8,  "ch", 9);
 
 		constexpr auto  DL      = Register(2,  8,  "dl", 10);
-		constexpr auto  DH      = Register(2,  8,  "dh", 11);
-		constexpr auto  DX      = Register(2, 16,  "dx", 12);
-		constexpr auto EDX      = Register(2, 32, "edx", 13);
-		constexpr auto RDX      = Register(2, 64, "rdx", 14);
+		constexpr auto  DX      = Register(2, 16,  "dx", 11);
+		constexpr auto EDX      = Register(2, 32, "edx", 12);
+		constexpr auto RDX      = Register(2, 64, "rdx", 13);
+		constexpr auto  DH      = Register(REG_FLAG_HI_BYTE | 2,  8,  "dh", 14);
 
 		constexpr auto  BL      = Register(3,  8,  "bl", 15);
-		constexpr auto  BH      = Register(3,  8,  "bh", 16);
-		constexpr auto  BX      = Register(3, 16,  "bx", 17);
-		constexpr auto EBX      = Register(3, 32, "ebx", 18);
-		constexpr auto RBX      = Register(3, 64, "rbx", 19);
+		constexpr auto  BX      = Register(3, 16,  "bx", 16);
+		constexpr auto EBX      = Register(3, 32, "ebx", 17);
+		constexpr auto RBX      = Register(3, 64, "rbx", 18);
+		constexpr auto  BH      = Register(REG_FLAG_HI_BYTE | 3,  8,  "bh", 19);
 
 		constexpr auto  SPL     = Register(4,  8,  "spl", 20);
 		constexpr auto  SP      = Register(4, 16,  "sp", 21);

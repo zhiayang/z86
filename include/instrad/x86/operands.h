@@ -85,6 +85,8 @@ namespace instrad::x86
 		uint8_t index = ((sib & 0x38) >> 3);
 		uint8_t scale = ((sib & 0xC0) >> 6);
 
+		// btw, only 32-bit and 64-bit encodings can have SIBs, which is why real-mode stuff
+		// is not handled here.
 		auto compat = mods.compatibilityMode;
 
 		auto mem = MemoryRef();
@@ -281,10 +283,11 @@ namespace instrad::x86
 					auto imm = readSignedImm8(buf);
 					switch(mods.modrm.rm())
 					{
-						case 0: return MemoryRef(bits, regs::BX, regs::SI, 0, imm);
-						case 1: return MemoryRef(bits, regs::BX, regs::DI, 0, imm);
-						case 2: return MemoryRef(bits, regs::BP, regs::SI, 0, imm);
-						case 3: return MemoryRef(bits, regs::BP, regs::DI, 0, imm);
+						// note: scale should be 1
+						case 0: return MemoryRef(bits, regs::BX, regs::SI, 1, imm);
+						case 1: return MemoryRef(bits, regs::BX, regs::DI, 1, imm);
+						case 2: return MemoryRef(bits, regs::BP, regs::SI, 1, imm);
+						case 3: return MemoryRef(bits, regs::BP, regs::DI, 1, imm);
 						case 4: return MemoryRef(bits, regs::SI, imm);
 						case 5: return MemoryRef(bits, regs::DI, imm);
 						case 6: return MemoryRef(bits, regs::BP, imm);
@@ -321,10 +324,11 @@ namespace instrad::x86
 					auto imm = readSignedImm16(buf);
 					switch(mods.modrm.rm())
 					{
-						case 0: return MemoryRef(bits, regs::BX, regs::SI, 0, imm);
-						case 1: return MemoryRef(bits, regs::BX, regs::DI, 0, imm);
-						case 2: return MemoryRef(bits, regs::BP, regs::SI, 0, imm);
-						case 3: return MemoryRef(bits, regs::BP, regs::DI, 0, imm);
+						// note: scale should be 1
+						case 0: return MemoryRef(bits, regs::BX, regs::SI, 1, imm);
+						case 1: return MemoryRef(bits, regs::BX, regs::DI, 1, imm);
+						case 2: return MemoryRef(bits, regs::BP, regs::SI, 1, imm);
+						case 3: return MemoryRef(bits, regs::BP, regs::DI, 1, imm);
 						case 4: return MemoryRef(bits, regs::SI, imm);
 						case 5: return MemoryRef(bits, regs::DI, imm);
 						case 6: return MemoryRef(bits, regs::BP, imm);

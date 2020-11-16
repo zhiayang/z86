@@ -11,14 +11,22 @@
 
 namespace z86
 {
+	enum class SegReg { CS, DS, ES, FS, GS, SS };
 
 	struct SegmentedAddr
 	{
-		SegmentedAddr() : segment(0), offset(0) { }
-		SegmentedAddr(uint16_t s, uint64_t o) : segment(s), offset(o) { }
+		SegmentedAddr() : reg(SegReg::DS), offset(0) { }
+		SegmentedAddr(SegReg sr, uint64_t o) : reg(sr), offset(o) { }
 
-		uint16_t segment;
+		SegReg reg;
 		uint64_t offset;
+
+		static SegmentedAddr cs(uint64_t ofs) { return SegmentedAddr(SegReg::CS, ofs); }
+		static SegmentedAddr ds(uint64_t ofs) { return SegmentedAddr(SegReg::DS, ofs); }
+		static SegmentedAddr es(uint64_t ofs) { return SegmentedAddr(SegReg::ES, ofs); }
+		static SegmentedAddr fs(uint64_t ofs) { return SegmentedAddr(SegReg::FS, ofs); }
+		static SegmentedAddr gs(uint64_t ofs) { return SegmentedAddr(SegReg::GS, ofs); }
+		static SegmentedAddr ss(uint64_t ofs) { return SegmentedAddr(SegReg::SS, ofs); }
 	};
 
 	struct VirtAddr

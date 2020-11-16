@@ -6,115 +6,89 @@
 
 namespace z86
 {
-	CPU::CPU() : m_exec(*this), m_pmmu(*this, this->m_memory), m_smmu(*this, this->m_pmmu)
+	CPU::CPU() : m_exec(*this), m_pmmu(*this, m_memory), m_smmu(*this, m_pmmu)
 	{
 	}
 
+	uint8_t  CPU::read8(uint64_t address)  { return this->read8(SegReg::DS, address); }
+	uint16_t CPU::read16(uint64_t address) { return this->read16(SegReg::DS, address); }
+	uint32_t CPU::read32(uint64_t address) { return this->read32(SegReg::DS, address); }
+	uint64_t CPU::read64(uint64_t address) { return this->read64(SegReg::DS, address); }
+
+	uint8_t CPU::read8(SegReg seg, uint64_t address)    { return m_smmu.read8(SegmentedAddr(seg, address)); }
+	uint16_t CPU::read16(SegReg seg, uint64_t address)  { return m_smmu.read16(SegmentedAddr(seg, address)); }
+	uint32_t CPU::read32(SegReg seg, uint64_t address)  { return m_smmu.read32(SegmentedAddr(seg, address)); }
+	uint64_t CPU::read64(SegReg seg, uint64_t address)  { return m_smmu.read64(SegmentedAddr(seg, address)); }
+
+	void CPU::write8(SegReg seg, uint64_t address, uint8_t value)   { return m_smmu.write8(SegmentedAddr(seg, address), value); }
+	void CPU::write16(SegReg seg, uint64_t address, uint16_t value) { return m_smmu.write16(SegmentedAddr(seg, address), value); }
+	void CPU::write32(SegReg seg, uint64_t address, uint32_t value) { return m_smmu.write32(SegmentedAddr(seg, address), value); }
+	void CPU::write64(SegReg seg, uint64_t address, uint64_t value) { return m_smmu.write64(SegmentedAddr(seg, address), value); }
 
 
-
-
-
-	uint8_t& CPU::reg8(const instrad::x86::Register& reg)
+	// TODO: this needs to be optimised desperately. Register already has a bunch of flags
+	// and integer stuff we could use, so just use that and make a table.
+	RegWrapper<uint8_t> CPU::reg8(const instrad::x86::Register& reg)
 	{
 		using namespace instrad::x86;
 
-		if(reg == regs::AL)   return this->al();
-		if(reg == regs::CL)   return this->cl();
-		if(reg == regs::DL)   return this->dl();
-		if(reg == regs::BL)   return this->bl();
-		if(reg == regs::AH)   return this->ah();
-		if(reg == regs::CH)   return this->ch();
-		if(reg == regs::DH)   return this->dh();
-		if(reg == regs::BH)   return this->bh();
-
-		if(reg == regs::SPL)  return this->spl();
-		if(reg == regs::BPL)  return this->bpl();
-		if(reg == regs::SIL)  return this->sil();
-		if(reg == regs::DIL)  return this->dil();
-		if(reg == regs::R8B)  return this->r8b();
-		if(reg == regs::R9B)  return this->r9b();
-		if(reg == regs::R10B) return this->r10b();
-		if(reg == regs::R11B) return this->r11b();
-		if(reg == regs::R12B) return this->r12b();
-		if(reg == regs::R13B) return this->r13b();
-		if(reg == regs::R14B) return this->r14b();
-		if(reg == regs::R15B) return this->r15b();
+		auto idx = reg.index();
+		if(idx & regs::REG_FLAG_HI_BYTE && (idx & ~regs::REG_FLAG_HI_BYTE) < 4)
+		{
+			return m_gprs[idx & 0x4].high_8;
+		}
+		else if(idx >= 0 && idx < 16)
+		{
+			return m_gprs[idx].low_8;
+		}
 
 		assert(false && "invalid register");
 		return this->al();
 	}
 
-	uint16_t& CPU::reg16(const instrad::x86::Register& reg)
+	RegWrapper<uint16_t> CPU::reg16(const instrad::x86::Register& reg)
 	{
 		using namespace instrad::x86;
 
-		if(reg == regs::AX)   return this->ax();
-		if(reg == regs::CX)   return this->cx();
-		if(reg == regs::DX)   return this->dx();
-		if(reg == regs::BX)   return this->bx();
-		if(reg == regs::SP)   return this->sp();
-		if(reg == regs::BP)   return this->bp();
-		if(reg == regs::SI)   return this->si();
-		if(reg == regs::DI)   return this->di();
-		if(reg == regs::R8W)  return this->r8w();
-		if(reg == regs::R9W)  return this->r9w();
-		if(reg == regs::R10W) return this->r10w();
-		if(reg == regs::R11W) return this->r11w();
-		if(reg == regs::R12W) return this->r12w();
-		if(reg == regs::R13W) return this->r13w();
-		if(reg == regs::R14W) return this->r14w();
-		if(reg == regs::R15W) return this->r15w();
+		auto idx = reg.index();
+		if(idx & regs::REG_FLAG_SEGMENT)
+		{
+			return RegWrapper<uint16_t>(this, idx, m_segment_regs[idx & 0x7], [](CPU* cpu, short idx, uint16_t val){
+				cpu->m_smmu.load(static_cast<SegReg>(idx & 0x7), val);
+			});
+		}
+		else if(idx >= 0 && idx < 16)
+		{
+			return this->m_gprs[idx].low_16;
+		}
 
 		assert(false && "invalid register");
 		return this->ax();
 	}
 
-	uint32_t& CPU::reg32(const instrad::x86::Register& reg)
+	RegWrapper<uint32_t> CPU::reg32(const instrad::x86::Register& reg)
 	{
 		using namespace instrad::x86;
 
-		if(reg == regs::EAX)  return this->eax();
-		if(reg == regs::ECX)  return this->ecx();
-		if(reg == regs::EDX)  return this->edx();
-		if(reg == regs::EBX)  return this->ebx();
-		if(reg == regs::ESP)  return this->esp();
-		if(reg == regs::EBP)  return this->ebp();
-		if(reg == regs::ESI)  return this->esi();
-		if(reg == regs::EDI)  return this->edi();
-		if(reg == regs::R8D)  return this->r8d();
-		if(reg == regs::R9D)  return this->r9d();
-		if(reg == regs::R10D) return this->r10d();
-		if(reg == regs::R11D) return this->r11d();
-		if(reg == regs::R12D) return this->r12d();
-		if(reg == regs::R13D) return this->r13d();
-		if(reg == regs::R14D) return this->r14d();
-		if(reg == regs::R15D) return this->r15d();
+		auto idx = reg.index();
+		if(idx >= 0 && idx < 16)
+		{
+			return m_gprs[idx].low_32;
+		}
 
 		assert(false && "invalid register");
 		return this->eax();
 	}
 
-	uint64_t& CPU::reg64(const instrad::x86::Register& reg)
+	RegWrapper<uint64_t> CPU::reg64(const instrad::x86::Register& reg)
 	{
 		using namespace instrad::x86;
 
-		if(reg == regs::RAX)  return this->rax();
-		if(reg == regs::RCX)  return this->rcx();
-		if(reg == regs::RDX)  return this->rdx();
-		if(reg == regs::RBX)  return this->rbx();
-		if(reg == regs::RSP)  return this->rsp();
-		if(reg == regs::RBP)  return this->rbp();
-		if(reg == regs::RSI)  return this->rsi();
-		if(reg == regs::RDI)  return this->rdi();
-		if(reg == regs::R8)   return this->r8();
-		if(reg == regs::R9)   return this->r9();
-		if(reg == regs::R10)  return this->r10();
-		if(reg == regs::R11)  return this->r11();
-		if(reg == regs::R12)  return this->r12();
-		if(reg == regs::R13)  return this->r13();
-		if(reg == regs::R14)  return this->r14();
-		if(reg == regs::R15)  return this->r15();
+		auto idx = reg.index();
+		if(idx >= 0 && idx < 16)
+		{
+			return m_gprs[idx].low_64;
+		}
 
 		assert(false && "invalid register");
 		return this->rax();

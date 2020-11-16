@@ -109,6 +109,26 @@ namespace z86
 		Long,
 	};
 
+	template <typename T>
+	struct RegWrapper
+	{
+		ALWAYS_INLINE RegWrapper(T& x) : cpu(nullptr), idx(0), x(x), fn([](CPU*, short, T){}) { }
+		ALWAYS_INLINE RegWrapper(CPU* cpu, short idx, T& x, void (*fn)(CPU*, short, T))
+			: cpu(cpu), idx(idx), x(x), fn(fn) { }
+
+		ALWAYS_INLINE T& operator=(T v) { x = v; fn(cpu, idx, v); return x; }
+		ALWAYS_INLINE operator T() { return x; }
+		ALWAYS_INLINE T get() { return x; }
+		ALWAYS_INLINE operator Value() { return Value(x); }
+
+	private:
+		CPU* cpu;
+		short idx;
+		T& x;
+		void (*fn)(CPU*, short, T);
+	};
+
+
 	struct CPU
 	{
 		CPU();
@@ -167,21 +187,25 @@ namespace z86
 		uint32_t read32(uint64_t address);
 		uint64_t read64(uint64_t address);
 
-		uint8_t read8(uint16_t seg, uint64_t address);
-		uint16_t read16(uint16_t seg, uint64_t address);
-		uint32_t read32(uint16_t seg, uint64_t address);
-		uint64_t read64(uint16_t seg, uint64_t address);
+		uint8_t read8(SegReg seg, uint64_t address);
+		uint16_t read16(SegReg seg, uint64_t address);
+		uint32_t read32(SegReg seg, uint64_t address);
+		uint64_t read64(SegReg seg, uint64_t address);
+
+		void write8(SegReg seg, uint64_t address, uint8_t value);
+		void write16(SegReg seg, uint64_t address, uint16_t value);
+		void write32(SegReg seg, uint64_t address, uint32_t value);
+		void write64(SegReg seg, uint64_t address, uint64_t value);
 
 
 		CPUMode mode() const { return this->m_mode; }
 		bool isProtected() const { return this->m_mode >= CPUMode::Prot; }
 
-
 		// A, C, D, B, SP, BP, etc.
-		uint8_t& reg8(const instrad::x86::Register& reg);
-		uint16_t& reg16(const instrad::x86::Register& reg);
-		uint32_t& reg32(const instrad::x86::Register& reg);
-		uint64_t& reg64(const instrad::x86::Register& reg);
+		RegWrapper<uint8_t> reg8(const instrad::x86::Register& reg);
+		RegWrapper<uint16_t> reg16(const instrad::x86::Register& reg);
+		RegWrapper<uint32_t> reg32(const instrad::x86::Register& reg);
+		RegWrapper<uint64_t> reg64(const instrad::x86::Register& reg);
 
 		// accessor spam.
 		// flags register
@@ -189,17 +213,17 @@ namespace z86
 		inline FlagsReg& flags()        { return this->m_flags; }
 
 		// special
-		inline uint16_t ip() const  { return (uint16_t) this->m_ip; }
-		inline uint32_t eip() const { return (uint32_t) this->m_ip; }
-		inline uint64_t rip() const { return (uint64_t) this->m_ip; }
+		inline uint16_t ip() const      { return static_cast<uint16_t>(this->m_ip); }
+		inline uint32_t eip() const     { return static_cast<uint32_t>(this->m_ip); }
+		inline uint64_t rip() const     { return static_cast<uint64_t>(this->m_ip); }
 
 		// segment registers
-		inline uint16_t& cs()           { return this->m_segment_regs[IDX_CS]; }
-		inline uint16_t& ds()           { return this->m_segment_regs[IDX_DS]; }
-		inline uint16_t& es()           { return this->m_segment_regs[IDX_ES]; }
-		inline uint16_t& fs()           { return this->m_segment_regs[IDX_FS]; }
-		inline uint16_t& gs()           { return this->m_segment_regs[IDX_GS]; }
-		inline uint16_t& ss()           { return this->m_segment_regs[IDX_SS]; }
+		inline uint16_t cs() const      { return this->m_segment_regs[IDX_CS]; }
+		inline uint16_t ds() const      { return this->m_segment_regs[IDX_DS]; }
+		inline uint16_t es() const      { return this->m_segment_regs[IDX_ES]; }
+		inline uint16_t fs() const      { return this->m_segment_regs[IDX_FS]; }
+		inline uint16_t gs() const      { return this->m_segment_regs[IDX_GS]; }
+		inline uint16_t ss() const      { return this->m_segment_regs[IDX_SS]; }
 
 		// GPRS
 		// 8-bit registers (high)
@@ -279,92 +303,5 @@ namespace z86
 		inline uint64_t& r13()          { return this->m_gprs[IDX_R13].low_64; }
 		inline uint64_t& r14()          { return this->m_gprs[IDX_R14].low_64; }
 		inline uint64_t& r15()          { return this->m_gprs[IDX_R15].low_64; }
-
-
-		// uint8_t reg8(const instrad::x86::Register& reg) const;
-		// uint16_t reg16(const instrad::x86::Register& reg) const;
-		// uint32_t reg32(const instrad::x86::Register& reg) const;
-		// uint64_t reg64(const instrad::x86::Register& reg) const;
-
-		// inline uint16_t cs() const      { return this->m_segment_regs[0]; }
-		// inline uint16_t ds() const      { return this->m_segment_regs[1]; }
-		// inline uint16_t es() const      { return this->m_segment_regs[2]; }
-		// inline uint16_t fs() const      { return this->m_segment_regs[3]; }
-		// inline uint16_t gs() const      { return this->m_segment_regs[4]; }
-		// inline uint16_t ss() const      { return this->m_segment_regs[5]; }
-
-		// inline uint8_t ah() const       { return this->m_gprs[IDX_A].high_8; }
-		// inline uint8_t ch() const       { return this->m_gprs[IDX_C].high_8; }
-		// inline uint8_t dh() const       { return this->m_gprs[IDX_D].high_8; }
-		// inline uint8_t bh() const       { return this->m_gprs[IDX_B].high_8; }
-
-		// inline uint8_t al() const       { return this->m_gprs[0].low_8; }
-		// inline uint8_t cl() const       { return this->m_gprs[1].low_8; }
-		// inline uint8_t dl() const       { return this->m_gprs[2].low_8; }
-		// inline uint8_t bl() const       { return this->m_gprs[3].low_8; }
-		// inline uint8_t spl() const      { return this->m_gprs[4].low_8; }
-		// inline uint8_t bpl() const      { return this->m_gprs[5].low_8; }
-		// inline uint8_t sil() const      { return this->m_gprs[6].low_8; }
-		// inline uint8_t dil() const      { return this->m_gprs[7].low_8; }
-		// inline uint8_t r8b() const      { return this->m_gprs[8].low_8; }
-		// inline uint8_t r9b() const      { return this->m_gprs[9].low_8; }
-		// inline uint8_t r10b() const     { return this->m_gprs[10].low_8; }
-		// inline uint8_t r11b() const     { return this->m_gprs[11].low_8; }
-		// inline uint8_t r12b() const     { return this->m_gprs[12].low_8; }
-		// inline uint8_t r13b() const     { return this->m_gprs[13].low_8; }
-		// inline uint8_t r14b() const     { return this->m_gprs[14].low_8; }
-		// inline uint8_t r15b() const     { return this->m_gprs[15].low_8; }
-
-		// inline uint16_t ax() const      { return this->m_gprs[0].low_16; }
-		// inline uint16_t cx() const      { return this->m_gprs[1].low_16; }
-		// inline uint16_t dx() const      { return this->m_gprs[2].low_16; }
-		// inline uint16_t bx() const      { return this->m_gprs[3].low_16; }
-		// inline uint16_t sp() const      { return this->m_gprs[4].low_16; }
-		// inline uint16_t bp() const      { return this->m_gprs[5].low_16; }
-		// inline uint16_t si() const      { return this->m_gprs[6].low_16; }
-		// inline uint16_t di() const      { return this->m_gprs[7].low_16; }
-		// inline uint16_t r8w() const     { return this->m_gprs[8].low_16; }
-		// inline uint16_t r9w() const     { return this->m_gprs[9].low_16; }
-		// inline uint16_t r10w() const    { return this->m_gprs[10].low_16; }
-		// inline uint16_t r11w() const    { return this->m_gprs[11].low_16; }
-		// inline uint16_t r12w() const    { return this->m_gprs[12].low_16; }
-		// inline uint16_t r13w() const    { return this->m_gprs[13].low_16; }
-		// inline uint16_t r14w() const    { return this->m_gprs[14].low_16; }
-		// inline uint16_t r15w() const    { return this->m_gprs[15].low_16; }
-
-		// inline uint32_t eax() const     { return this->m_gprs[0].low_32; }
-		// inline uint32_t ecx() const     { return this->m_gprs[1].low_32; }
-		// inline uint32_t edx() const     { return this->m_gprs[2].low_32; }
-		// inline uint32_t ebx() const     { return this->m_gprs[3].low_32; }
-		// inline uint32_t esp() const     { return this->m_gprs[4].low_32; }
-		// inline uint32_t ebp() const     { return this->m_gprs[5].low_32; }
-		// inline uint32_t esi() const     { return this->m_gprs[6].low_32; }
-		// inline uint32_t edi() const     { return this->m_gprs[7].low_32; }
-		// inline uint32_t r8d() const     { return this->m_gprs[8].low_32; }
-		// inline uint32_t r9d() const     { return this->m_gprs[9].low_32; }
-		// inline uint32_t r10d() const    { return this->m_gprs[10].low_32; }
-		// inline uint32_t r11d() const    { return this->m_gprs[11].low_32; }
-		// inline uint32_t r12d() const    { return this->m_gprs[12].low_32; }
-		// inline uint32_t r13d() const    { return this->m_gprs[13].low_32; }
-		// inline uint32_t r14d() const    { return this->m_gprs[14].low_32; }
-		// inline uint32_t r15d() const    { return this->m_gprs[15].low_32; }
-
-		// inline uint64_t rax() const     { return this->m_gprs[0].low_64; }
-		// inline uint64_t rcx() const     { return this->m_gprs[1].low_64; }
-		// inline uint64_t rdx() const     { return this->m_gprs[2].low_64; }
-		// inline uint64_t rbx() const     { return this->m_gprs[3].low_64; }
-		// inline uint64_t rsp() const     { return this->m_gprs[4].low_64; }
-		// inline uint64_t rbp() const     { return this->m_gprs[5].low_64; }
-		// inline uint64_t rsi() const     { return this->m_gprs[6].low_64; }
-		// inline uint64_t rdi() const     { return this->m_gprs[7].low_64; }
-		// inline uint64_t r8() const      { return this->m_gprs[8].low_64; }
-		// inline uint64_t r9() const      { return this->m_gprs[9].low_64; }
-		// inline uint64_t r10() const     { return this->m_gprs[10].low_64; }
-		// inline uint64_t r11() const     { return this->m_gprs[11].low_64; }
-		// inline uint64_t r12() const     { return this->m_gprs[12].low_64; }
-		// inline uint64_t r13() const     { return this->m_gprs[13].low_64; }
-		// inline uint64_t r14() const     { return this->m_gprs[14].low_64; }
-		// inline uint64_t r15() const     { return this->m_gprs[15].low_64; }
-
 	};
 }

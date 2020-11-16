@@ -8,6 +8,7 @@
 namespace z86
 {
 	using Operand = instrad::x86::Operand;
+	using Register = instrad::x86::Register;
 	using Instruction = instrad::x86::Instruction;
 	using InstrMods = instrad::x86::InstrModifiers;
 
@@ -56,31 +57,76 @@ namespace z86
 
 
 
+	static int get_operand_size(CPU& cpu, const InstrMods& mods)
+	{
+		if(cpu.mode() == CPUMode::Real)
+		{
+			return mods.operandSizeOverride
+				? 32
+				: 16;
+		}
+		else if(cpu.mode() == CPUMode::Prot || cpu.mode() == CPUMode::Long)
+		{
+			if(mods.operandSizeOverride)    return 16;
+			else if(mods.rex.W())           return 64;
+			else                            return 32;
+		}
+
+		assert(false && "invalid operand size");
+		return 0;
+	}
 
 
+	static SegReg convert_sreg(const Register& reg)
+	{
+		auto idx = reg.index();
+		assert(idx & instrad::x86::regs::REG_FLAG_SEGMENT);
 
+		return static_cast<SegReg>(idx & 0x7);
+	}
 
+	static std::pair<SegReg, uint64_t> resolve_mem(CPU& cpu, const InstrMods& mods, const Operand& op)
+	{
+		auto seg = SegReg::DS;
+		uint64_t ofs = 0;
+		uint64_t idx = 0;
 
+		auto& mem = op.mem();
+
+		if(mem.segment().present())
+			seg = convert_sreg(mem.segment());
+
+		if(cpu.mode() == CPUMode::Real)
+		{
+			ofs += mem.base().present() ? cpu.reg16(mem.base()) : 0;
+			idx = mem.index().present() ? cpu.reg16(mem.index()) : 0;
+		}
+		else if(cpu.mode() == CPUMode::Prot)
+		{
+			ofs += mem.base().present() ? cpu.reg32(mem.base()) : 0;
+			idx = mem.index().present() ? cpu.reg32(mem.index()) : 0;
+		}
+		else if(cpu.mode() == CPUMode::Long)
+		{
+			ofs += mem.base().present() ? cpu.reg64(mem.base()) : 0;
+			idx = mem.index().present() ? cpu.reg64(mem.index()) : 0;
+		}
+
+		ofs += mem.displacement();
+		ofs += idx * mem.scale();
+
+		return { seg, ofs };
+	}
 
 	Value get_operand(CPU& cpu, const InstrMods& mods, const Operand& op)
 	{
 		if(op.isRegister())
 		{
-			if(cpu.mode() == CPUMode::Real)
+			switch(get_operand_size(cpu, mods))
 			{
-				if(mods.operandSizeOverride)
-					return cpu.reg32(op.reg());
-				else
-					return cpu.reg16(op.reg());
-			}
-			else if(cpu.mode() == CPUMode::Prot || cpu.mode() == CPUMode::Long)
-			{
-				if(mods.operandSizeOverride)
-					return cpu.reg16(op.reg());
-				else if(mods.rex.W())
-					return cpu.reg64(op.reg());
-				else
-					return cpu.reg32(op.reg());
+				case 16: return cpu.reg16(op.reg());
+				case 32: return cpu.reg32(op.reg());
+				case 64: return cpu.reg64(op.reg());
 			}
 		}
 		else if(op.isImmediate())
@@ -98,6 +144,15 @@ namespace z86
 		}
 		else if(op.isMemory())
 		{
+			auto [ seg, ofs ] = resolve_mem(cpu, mods, op);
+			zpr::println("seg: {}, ofs: {x} ({x})", seg, ofs, cpu.es());
+
+			switch(get_operand_size(cpu, mods))
+			{
+				case 16: return cpu.read16(seg, ofs);
+				case 32: return cpu.read32(seg, ofs);
+				case 64: return cpu.read64(seg, ofs);
+			}
 		}
 
 		assert(false);
@@ -108,29 +163,22 @@ namespace z86
 	{
 		if(op.isRegister())
 		{
-			if(cpu.mode() == CPUMode::Real)
+			switch(get_operand_size(cpu, mods))
 			{
-				if(mods.operandSizeOverride)
-					cpu.reg32(op.reg()) = value.u32();
-				else
-					cpu.reg16(op.reg()) = value.u16();
-
-				return;
-			}
-			else if(cpu.mode() == CPUMode::Prot || cpu.mode() == CPUMode::Long)
-			{
-				if(mods.operandSizeOverride)
-					cpu.reg16(op.reg()) = value.u16();
-				else if(mods.rex.W())
-					cpu.reg64(op.reg()) = value.u64();
-				else
-					cpu.reg32(op.reg()) = value.u32();
-
-				return;
+				case 16: cpu.reg16(op.reg()) = value.u16(); return;
+				case 32: cpu.reg32(op.reg()) = value.u32(); return;
+				case 64: cpu.reg64(op.reg()) = value.u64(); return;
 			}
 		}
 		else if(op.isMemory())
 		{
+			auto [ seg, ofs ] = resolve_mem(cpu, mods, op);
+			switch(get_operand_size(cpu, mods))
+			{
+				case 16: cpu.write16(seg, ofs, value.u16()); return;
+				case 32: cpu.write32(seg, ofs, value.u32()); return;
+				case 64: cpu.write64(seg, ofs, value.u64()); return;
+			}
 		}
 
 		assert(false && "invalid destination operand kind");

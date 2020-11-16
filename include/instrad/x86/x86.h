@@ -28,8 +28,9 @@ namespace instrad::x86
 		constexpr MemoryRef(int bits, const Register& b, int64_t d) : m_bits(bits), m_displacement(d), m_base(b) { }
 		constexpr MemoryRef(int bits, const Register& b, const Register& i) : m_bits(bits), m_base(b), m_index(i) { }
 
+		// note: guard against accidentally using a 0 scale.
 		constexpr MemoryRef(int bits, const Register& b, const Register& i, int s, int64_t d)
-			: m_bits(bits), m_scale(s), m_displacement(d), m_base(b), m_index(i) { }
+			: m_bits(bits), m_scale(s > 0 ? s : 1), m_displacement(d), m_base(b), m_index(i) { }
 
 		constexpr int bits() const { return this->m_bits; }
 		constexpr int scale() const { return this->m_scale; }

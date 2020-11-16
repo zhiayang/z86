@@ -30,19 +30,25 @@ namespace z86
 		void disable();
 
 		bool enabled();
+
+		uint8_t read8(VirtAddr addr);
+		uint16_t read16(VirtAddr addr);
+		uint32_t read32(VirtAddr addr);
+		uint64_t read64(VirtAddr addr);
+		void write8(VirtAddr addr, uint8_t value);
+		void write16(VirtAddr addr, uint16_t value);
+		void write32(VirtAddr addr, uint32_t value);
+		void write64(VirtAddr addr, uint64_t value);
 	};
 
 	struct SegmentedMMU
 	{
 		struct SystemDescriptor
 		{
-			uint16_t limit_low;
-			uint16_t base_low;
-
-			uint8_t  base_mid;
-			uint8_t  access;
-			uint8_t  flags;
-			uint8_t  base_high;
+			uint64_t base;
+			uint32_t limit;
+			uint8_t access;
+			uint8_t flags;
 		};
 
 		SegmentedMMU(CPU& cpu, PagedMMU& pmmu) : m_cpu(cpu), m_pagedMMU(pmmu) { }
@@ -66,6 +72,8 @@ namespace z86
 		SystemDescriptor m_cached_ss = { };
 
 	public:
+		void load(SegReg sr, uint16_t sel);
+
 		void loadCS(uint16_t sel);
 		void loadDS(uint16_t sel);
 		void loadES(uint16_t sel);
