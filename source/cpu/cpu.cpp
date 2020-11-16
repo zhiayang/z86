@@ -25,9 +25,6 @@ namespace z86
 	void CPU::write32(SegReg seg, uint64_t address, uint32_t value) { return m_smmu.write32(SegmentedAddr(seg, address), value); }
 	void CPU::write64(SegReg seg, uint64_t address, uint64_t value) { return m_smmu.write64(SegmentedAddr(seg, address), value); }
 
-
-	// TODO: this needs to be optimised desperately. Register already has a bunch of flags
-	// and integer stuff we could use, so just use that and make a table.
 	RegWrapper<uint8_t> CPU::reg8(const instrad::x86::Register& reg)
 	{
 		using namespace instrad::x86;

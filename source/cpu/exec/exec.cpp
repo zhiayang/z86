@@ -14,11 +14,9 @@ namespace z86
 
 	void op_arithmetic(CPU& cpu, const instrad::x86::Op& op, const InstrMods& mods, const Operand& dst, const Operand& src);
 
-	static void op_mov(CPU& cpu, const InstrMods& mods, const Operand& dst, const Operand& src)
-	{
-		auto src_val = get_operand(cpu, mods, src);
-		set_operand(cpu, mods, dst, src_val);
-	}
+	static void op_mov(CPU& cpu, const InstrMods& mods, const Operand& dst, const Operand& src);
+	static void op_push(CPU& cpu, const InstrMods& mods, const Operand& src);
+	static void op_pop(CPU& cpu, const InstrMods& mods, const Operand& dst);
 
 	void Executor::execute(const Instruction& instr)
 	{
@@ -42,20 +40,18 @@ namespace z86
 				op_mov(this->m_cpu, instr.mods(), instr.dst(), instr.src());
 				break;
 
+			case ops::PUSH.id():
+				op_push(this->m_cpu, instr.mods(), instr.dst());
+				break;
 
+			case ops::POP.id():
+				op_pop(this->m_cpu, instr.mods(), instr.dst());
+				break;
 
 			default:
 				assert(false && "invalid opcode");
 		}
 	}
-
-
-
-
-
-
-
-
 
 	static int get_operand_size(CPU& cpu, const InstrMods& mods)
 	{
@@ -182,5 +178,70 @@ namespace z86
 		}
 
 		assert(false && "invalid destination operand kind");
+	}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	static void op_push(CPU& cpu, const InstrMods& mods, const Operand& src)
+	{
+		auto src_val = get_operand(cpu, mods, src);
+		auto decr = get_operand_size(cpu, mods) / 8;
+		uint64_t ofs = 0;
+
+		switch(cpu.mode())
+		{
+			case CPUMode::Real: ofs = (cpu.sp() -= decr); break;
+			case CPUMode::Prot: ofs = (cpu.esp() -= decr); break;
+			case CPUMode::Long: ofs = (cpu.rsp() -= decr); break;
+		}
+
+		switch(decr)
+		{
+			case 2: return cpu.write16(SegReg::SS, ofs, src_val.u16());
+			case 4: return cpu.write32(SegReg::SS, ofs, src_val.u32());
+			case 8: return cpu.write64(SegReg::SS, ofs, src_val.u64());
+		}
+
+		assert(false && "owo");
+	}
+
+	static void op_pop(CPU& cpu, const InstrMods& mods, const Operand& dst)
+	{
+		auto incr = get_operand_size(cpu, mods) / 8;
+		uint64_t ofs = 0;
+
+		switch(cpu.mode())
+		{
+			case CPUMode::Real: ofs = cpu.sp(), cpu.sp() += incr; break;
+			case CPUMode::Prot: ofs = cpu.esp(), cpu.esp() += incr; break;
+			case CPUMode::Long: ofs = cpu.rsp(), cpu.rsp() += incr; break;
+		}
+
+		switch(incr)
+		{
+			case 2: return set_operand(cpu, mods, dst, cpu.read16(SegReg::SS, ofs));
+			case 4: return set_operand(cpu, mods, dst, cpu.read32(SegReg::SS, ofs));
+			case 8: return set_operand(cpu, mods, dst, cpu.read64(SegReg::SS, ofs));
+		}
+
+		assert(false && "owo");
+	}
+
+	static void op_mov(CPU& cpu, const InstrMods& mods, const Operand& dst, const Operand& src)
+	{
+		auto src_val = get_operand(cpu, mods, src);
+		set_operand(cpu, mods, dst, src_val);
 	}
 }
