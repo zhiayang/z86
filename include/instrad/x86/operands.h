@@ -509,8 +509,14 @@ namespace instrad::x86
 				return getRegisterOrMemoryOperand(buf, getCurrentBits(mods), getCurrentBits(mods),
 					mods, RegKind::GPR);
 
-			case OpKind::SignExtImm32:
-				return (int64_t) readSignedImm32(buf);
+			case OpKind::SignExtImm32: {
+				auto bits = getCurrentBits(mods);
+
+				if(bits == 16)
+					return readSignedImm16(buf);
+				else
+					return static_cast<int64_t>(readSignedImm32(buf));
+			}
 
 			// TODO: need to handle relative offsets properly
 			case OpKind::Rel8Offset:

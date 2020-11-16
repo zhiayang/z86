@@ -39,8 +39,6 @@ namespace z86
 
 	uint16_t MemoryController::read16(PhysAddr addr)
 	{
-		zpr::println("read16 {x}", addr.addr);
-
 		for(auto& region : this->m_regions)
 			if(contains(region, addr))
 				return region.region->read16(addr.addr);

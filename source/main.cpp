@@ -48,6 +48,8 @@ int main(int argc, char** argv)
 	while(buf.remaining() > 0)
 	{
 		auto instr = instrad::x86::read(buf, instrad::x86::ExecMode::Legacy);
+		zpr::println("{}", z86::print_att(instr, cpu.ip(), 0, 8));
+
 		cpu.m_exec.execute(instr);
 		dump(cpu);
 	}

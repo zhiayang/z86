@@ -207,6 +207,7 @@ namespace z86
 			case CPUMode::Long: ofs = (cpu.rsp() -= decr); break;
 		}
 
+		zpr::println("ofs = {x}, decr = {}, val = {x}", ofs, decr, src_val.u16());
 		switch(decr)
 		{
 			case 2: return cpu.write16(SegReg::SS, ofs, src_val.u16());
@@ -229,6 +230,7 @@ namespace z86
 			case CPUMode::Long: ofs = cpu.rsp(), cpu.rsp() += incr; break;
 		}
 
+		zpr::println("ofs = {x}, incr = {}", ofs, incr);
 		switch(incr)
 		{
 			case 2: return set_operand(cpu, mods, dst, cpu.read16(SegReg::SS, ofs));

@@ -15,7 +15,7 @@ CXXDEPS     = $(CXXOBJ:.o=.d)
 CFLAGS      := -std=c11
 CXXFLAGS    := -std=c++17 -fno-exceptions
 
-OPTS        = -O3
+OPTS        = -O0 -g
 DEFINES     =
 WARNINGS    = -Wall -Wextra -Werror=return-type -Wno-unused-parameter -Wno-unused-private-field
 

@@ -9,8 +9,11 @@
 
 #include "zpr.h"
 
+namespace instrad { namespace x86 { struct Instruction; } }
 namespace z86
 {
+	std::string print_att(const instrad::x86::Instruction& instr, uint64_t ip, size_t margin = 4, size_t maxBytes = 13);
+
 	namespace util
 	{
 		size_t getFileSize(const std::string& path);
