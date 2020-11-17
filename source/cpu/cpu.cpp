@@ -2,12 +2,130 @@
 // Copyright (c) 2020, zhiayang
 // Licensed under the Apache License Version 2.0.
 
+#include "defs.h"
 #include "cpu/cpu.h"
 
 namespace z86
 {
+	static void dump(CPU& cpu)
+	{
+		if(cpu.mode() == z86::CPUMode::Real)
+		{
+			zpr::println("ax:    {4.2x}    bx:    {4.2x}", cpu.ax(), cpu.bx());
+			zpr::println("cx:    {4.2x}    dx:    {4.2x}", cpu.cx(), cpu.dx());
+			zpr::println("di:    {4.2x}    si:    {4.2x}", cpu.di(), cpu.si());
+			zpr::println("bp:    {4.2x}    sp:    {4.2x}", cpu.bp(), cpu.sp());
+			zpr::println("ip:    {4.2x}    cs:    {4.2x}", cpu.ip(), cpu.cs());
+			zpr::println("ds:    {4.2x}    ss:    {4.2x}", cpu.ds(), cpu.ss());
+			zpr::println("es:    {4.2x}    fs:    {4.2x}", cpu.es(), cpu.fs());
+			zpr::println("gs:    {4.2x}", cpu.gs());
+			zpr::println("flags: {016b}", cpu.flags().flags());
+			zpr::println("           ODITSZ A P C");
+			zpr::println("");
+		}
+	}
+
+
 	CPU::CPU() : m_exec(*this), m_pmmu(*this, m_memory), m_smmu(*this, m_pmmu)
 	{
+	}
+
+	void CPU::reset()
+	{
+		// AMD Manual, vol 2, 14.1.3
+		// Processor Initialisation State
+
+		// cr0 = 0x60000010
+		// cr2-4 = 0
+
+		m_mode = CPUMode::Real;
+
+		// first we reset the smmu
+		m_smmu.reset();
+
+		// gdtr, idtr, ldtr, tr are base 0 with limit 0xFFFF
+
+		// then, we set the selectors. note that this
+		// doesn't change the cached base/limit, which is what we need
+		// because there's some special stuff in there. (see segmentation.cpp)
+		m_segment_regs[IDX_CS] = 0xF000;
+		m_segment_regs[IDX_DS] = 0;
+		m_segment_regs[IDX_ES] = 0;
+		m_segment_regs[IDX_FS] = 0;
+		m_segment_regs[IDX_GS] = 0;
+		m_segment_regs[IDX_SS] = 0;
+
+		// clear all the registers.
+		for(size_t i = 0; i < 16; i++)
+			m_gprs[i].low_64 = 0;
+
+		// for some reason, EDX is special.
+		// it's some cpuid stuff: edx[3:0] = stepping
+		// edx[19:16] = extended model
+		// edx[7:4] = model
+		// edx[27:20] = extended family
+		// edx[11:8] = family
+
+		// for now just... set it to 0x30, which supposedly indicates
+		// an 80386 with stepping 0, model 3.
+		this->edx() = 0x30;
+
+		// IP is set to 0xFFF0
+		m_ip = 0xFFF0;
+
+
+
+		// this is pretty important...
+		auto test = GeneralPurposeReg {
+			.low_64 = 0x0123'4567'89AB'CDEF
+		};
+
+		assert(test.low_8  == 0xEF);
+		assert(test.high_8 == 0xCD);
+		assert(test.low_16 == 0xCDEF);
+		assert(test.low_32 == 0x89AB'CDEF);
+		assert(test.low_64 == 0x0123'4567'89AB'CDEF);
+	}
+
+	void CPU::start()
+	{
+		this->reset();
+
+		while(true)
+		{
+			if(!this->run(this->decode()))
+				break;
+		}
+	}
+
+	instrad::x86::Instruction CPU::decode()
+	{
+		auto buf = Buffer(*this);
+		auto begin = buf.position();
+
+		auto ret = instrad::x86::read(buf, instrad::x86::ExecMode::Legacy);
+
+		m_ip += (buf.position() - begin);
+		return ret;
+	}
+
+	bool CPU::run(instrad::x86::Instruction instr)
+	{
+		if(instr.op() == instrad::x86::ops::HLT)
+			return false;
+
+		m_exec.execute(instr);
+
+		zpr::println("{}", print_att(instr, this->ip(), 0, 1));
+		dump(*this);
+
+		return true;
+	}
+
+
+	void CPU::jump(uint64_t ip)
+	{
+		m_ip = ip;
 	}
 
 	void CPU::memLock() { m_memory.lock(); }

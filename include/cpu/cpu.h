@@ -26,21 +26,22 @@ namespace z86
 			};
 
 			struct {
-				uint32_t __low_32;
-
 				uint16_t low_16;
 				uint16_t high_16;
+
+				uint32_t __low_32;
 			};
 
 			struct {
-				uint32_t __low_32_1;
-				uint16_t __mid_16;
-
 				uint8_t low_8;
 				uint8_t high_8;
+
+				uint16_t __mid_16;
+				uint32_t __low_32_1;
 			};
 		};
 	};
+
 
 	struct FlagsReg
 	{
@@ -128,12 +129,11 @@ namespace z86
 		void (*fn)(CPU*, short, T);
 	};
 
-
 	struct CPU
 	{
 		CPU();
 
-	// private:
+	private:
 		// order is in terms of "standard" indices:
 		// A,  C,  D,   B,   SP,  BP,  SI,  DI
 		// R8, R9, R10, R11, R12, R13, R14, R15
@@ -151,7 +151,9 @@ namespace z86
 		CPUMode m_mode = CPUMode::Real;
 
 		// internal helpers
+	public:
 		Executor m_exec;
+	private:
 		MemoryController m_memory;
 		PagedMMU m_pmmu;
 		SegmentedMMU m_smmu;
@@ -180,6 +182,9 @@ namespace z86
 		static constexpr size_t IDX_GS = 4;
 		static constexpr size_t IDX_SS = 5;
 
+		instrad::x86::Instruction decode();
+		bool run(instrad::x86::Instruction instr);
+
 	public:
 		void memLock();
 		void memUnlock();
@@ -199,7 +204,6 @@ namespace z86
 		void write32(SegReg seg, uint64_t address, uint32_t value);
 		void write64(SegReg seg, uint64_t address, uint64_t value);
 
-
 		CPUMode mode() const { return this->m_mode; }
 		bool isProtected() const { return this->m_mode >= CPUMode::Prot; }
 
@@ -209,15 +213,27 @@ namespace z86
 		RegWrapper<uint32_t> reg32(const instrad::x86::Register& reg);
 		RegWrapper<uint64_t> reg64(const instrad::x86::Register& reg);
 
+		void start();
+		void reset();
+		void jump(uint64_t ip);
+
+		MemoryController& memory() { return m_memory; }
+
+
 		// accessor spam.
 		// flags register
 		inline FlagsReg flags() const   { return this->m_flags; }
 		inline FlagsReg& flags()        { return this->m_flags; }
 
 		// special
-		inline uint16_t ip() const      { return static_cast<uint16_t>(this->m_ip); }
-		inline uint32_t eip() const     { return static_cast<uint32_t>(this->m_ip); }
-		inline uint64_t rip() const     { return static_cast<uint64_t>(this->m_ip); }
+		inline uint64_t ip() const
+		{
+			if(m_mode == CPUMode::Real) return static_cast<uint16_t>(this->m_ip);
+			if(m_mode == CPUMode::Prot) return static_cast<uint32_t>(this->m_ip);
+			if(m_mode == CPUMode::Long) return static_cast<uint64_t>(this->m_ip);
+
+			return 0;
+		}
 
 		// segment registers
 		inline uint16_t cs() const      { return this->m_segment_regs[IDX_CS]; }
@@ -306,4 +322,41 @@ namespace z86
 		inline uint64_t& r14()          { return this->m_gprs[IDX_R14].low_64; }
 		inline uint64_t& r15()          { return this->m_gprs[IDX_R15].low_64; }
 	};
+
+
+	// implements the Buffer interface as specified in instrad/Buffer.h
+	struct Buffer
+	{
+		Buffer(CPU& cpu) : m_idx(0), m_cpu(cpu) { }
+
+		size_t position() const { return m_idx; }
+
+		uint8_t peek() const
+		{
+			return m_cpu.read8(SegReg::CS, m_cpu.ip() + m_idx);
+		}
+
+		uint8_t pop()
+		{
+			auto ret = this->peek();
+			m_idx++;
+			return ret;
+		}
+
+		bool match(uint8_t b)
+		{
+			if(this->peek() == b)
+			{
+				m_idx++;
+				return true;
+			}
+
+			return false;
+		}
+
+	private:
+		size_t m_idx;
+		CPU& m_cpu;
+	};
+
 }

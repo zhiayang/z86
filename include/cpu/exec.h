@@ -98,6 +98,8 @@ namespace z86
 		void execute(const instrad::x86::Instruction& instr);
 	};
 
+	int get_operand_size(CPU& cpu, const instrad::x86::InstrModifiers& mods);
+	int get_address_size(CPU& cpu, const instrad::x86::InstrModifiers& mods);
 
 	Value get_operand(CPU& cpu, const instrad::x86::InstrModifiers& mods, const instrad::x86::Operand& op);
 	void set_operand(CPU& cpu, const instrad::x86::InstrModifiers& mods, const instrad::x86::Operand& op, Value value);

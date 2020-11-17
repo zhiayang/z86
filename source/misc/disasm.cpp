@@ -36,7 +36,7 @@ namespace z86
 			}
 			else if(op.isRelativeOffset())
 			{
-				return zpr::sprint("{#x}", ip + instr.numBytes() + op.ofs().offset());
+				return zpr::sprint("{#x}", ip + instr.length() + op.ofs().offset());
 			}
 			else if(op.isMemory())
 			{
@@ -99,11 +99,11 @@ namespace z86
 
 		// print the bytes
 		size_t col = 0;
-		for(size_t i = 0; i < instr.numBytes(); i++)
-		{
-			margin += zpr::sprint("{02x} ", instr.bytes()[i]);
-			col += 3;
-		}
+		// for(size_t i = 0; i < instr.length(); i++)
+		// {
+		// 	margin += zpr::sprint("{02x} ", instr.bytes()[i]);
+		// 	col += 3;
+		// }
 
 		auto max = 2 * maxBytes + marginSz;
 

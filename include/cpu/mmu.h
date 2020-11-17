@@ -72,6 +72,7 @@ namespace z86
 		SystemDescriptor m_cached_ss = { };
 
 	public:
+		void reset();
 		void load(SegReg sr, uint16_t sel);
 
 		void loadCS(uint16_t sel);

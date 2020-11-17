@@ -5,21 +5,24 @@
 #include <unistd.h>
 #include <sys/mman.h>
 
+#include "defs.h"
 #include "cpu/mem.h"
 
 namespace z86
 {
-	HostMmapMemoryRegion::HostMmapMemoryRegion(size_t size)
+	HostMmapMemoryRegion::HostMmapMemoryRegion(size_t size, bool writable) : MemoryRegion(size), m_writable(writable)
 	{
-		this->m_ptr = mmap(nullptr, size, PROT_READ | PROT_WRITE,
+		auto ptr = mmap(nullptr, size, PROT_READ | PROT_WRITE,
 			MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
 
-		assert(this->m_ptr);
-		this->m_size = size;
+		if(ptr == (void*) -1)
+			lg::fatal("mem", "failed to mmap host region (size {} bytes)", size);
+
+		m_ptr = reinterpret_cast<uint8_t*>(ptr);
 	}
 
 	HostMmapMemoryRegion::~HostMmapMemoryRegion()
 	{
-		munmap(this->m_ptr, this->m_size);
+		munmap(m_ptr, m_size);
 	}
 }

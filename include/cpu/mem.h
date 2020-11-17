@@ -48,86 +48,66 @@ namespace z86
 
 	struct MemoryRegion
 	{
+		MemoryRegion(size_t sz) : m_size(sz) { }
 		virtual ~MemoryRegion() { }
-		virtual uint8_t read8(uint64_t offset) = 0;
-		virtual uint16_t read16(uint64_t offset) = 0;
-		virtual uint32_t read32(uint64_t offset) = 0;
-		virtual uint64_t read64(uint64_t offset) = 0;
-		virtual void write8(uint64_t offset, uint8_t value) = 0;
-		virtual void write16(uint64_t offset, uint16_t value) = 0;
-		virtual void write32(uint64_t offset, uint32_t value) = 0;
-		virtual void write64(uint64_t offset, uint64_t value) = 0;
 
-		virtual size_t size() = 0;
+		size_t size() { return m_size; }
+
+		uint8_t read8(uint64_t offset)                  { return this->internal_read<uint8_t>(offset); }
+		uint16_t read16(uint64_t offset)                { return this->internal_read<uint16_t>(offset); }
+		uint32_t read32(uint64_t offset)                { return this->internal_read<uint32_t>(offset); }
+		uint64_t read64(uint64_t offset)                { return this->internal_read<uint64_t>(offset); }
+
+		void write8(uint64_t offset, uint8_t value)     { this->internal_write(offset, value); }
+		void write16(uint64_t offset, uint16_t value)   { this->internal_write(offset, value); }
+		void write32(uint64_t offset, uint32_t value)   { this->internal_write(offset, value); }
+		void write64(uint64_t offset, uint64_t value)   { this->internal_write(offset, value); }
+
+		virtual void read(uint64_t offset, void* buf, size_t len) = 0;
+		virtual void write(uint64_t offset, const void* buf, size_t len) = 0;
+
+	protected:
+		size_t m_size;
+
+	private:
+
+		template <typename T>
+		void internal_write(uint64_t offset, T value)
+		{
+			this->write(offset, &value, sizeof(value));
+		}
+
+		template <typename T>
+		T internal_read(uint64_t offset)
+		{
+			T value = 0;
+			this->read(offset, &value, sizeof(T));
+			return value;
+		}
 	};
 
 	struct HostMmapMemoryRegion : MemoryRegion
 	{
-		HostMmapMemoryRegion(size_t size);
+		HostMmapMemoryRegion(size_t size, bool writable);
 		~HostMmapMemoryRegion();
 
 	private:
-		void* m_ptr = 0;
-		size_t m_size = 0;
+		uint8_t* m_ptr = 0;
+		bool m_writable = false;
 
 	public:
-		virtual size_t size() override { return this->m_size; }
-
-		virtual inline uint8_t read8(uint64_t offset) override
+		virtual void read(uint64_t offset, void* buf, size_t len) override
 		{
-			assert(offset < this->m_size);
-			return *((uint8_t*) ((uintptr_t) this->m_ptr + offset));
+			assert(offset + len <= m_size);
+			memcpy(buf, m_ptr + offset, len);
 		}
 
-		virtual inline uint16_t read16(uint64_t offset) override
+		virtual void write(uint64_t offset, const void* buf, size_t len) override
 		{
-			assert(offset + 1 < this->m_size);
+			assert(offset + len <= m_size);
+			assert(m_writable);
 
-			uint16_t ret = 0;
-			memcpy(&ret, (uint16_t*) ((uintptr_t) this->m_ptr + offset), sizeof(uint16_t));
-			return ret;
-		}
-
-		virtual inline uint32_t read32(uint64_t offset) override
-		{
-			assert(offset + 3 < this->m_size);
-
-			uint32_t ret = 0;
-			memcpy(&ret, (uint32_t*) ((uintptr_t) this->m_ptr + offset), sizeof(uint32_t));
-			return ret;
-		}
-
-		virtual inline uint64_t read64(uint64_t offset) override
-		{
-			assert(offset + 7 < this->m_size);
-
-			uint64_t ret = 0;
-			memcpy(&ret, (uint64_t*) ((uintptr_t) this->m_ptr + offset), sizeof(uint64_t));
-			return ret;
-		}
-
-		virtual inline void write8(uint64_t offset, uint8_t value) override
-		{
-			assert(offset < this->m_size);
-			*((uint8_t*) ((uintptr_t) this->m_ptr + offset)) = value;
-		}
-
-		virtual inline void write16(uint64_t offset, uint16_t value) override
-		{
-			assert(offset + 1 < this->m_size);
-			memcpy((uint16_t*) ((uintptr_t) this->m_ptr + offset), &value, sizeof(uint16_t));
-		}
-
-		virtual inline void write32(uint64_t offset, uint32_t value) override
-		{
-			assert(offset + 3 < this->m_size);
-			memcpy((uint32_t*) ((uintptr_t) this->m_ptr + offset), &value, sizeof(uint32_t));
-		}
-
-		virtual inline void write64(uint64_t offset, uint64_t value) override
-		{
-			assert(offset + 7 < this->m_size);
-			memcpy((uint64_t*) ((uintptr_t) this->m_ptr + offset), &value, sizeof(uint64_t));
+			memcpy(m_ptr + offset, buf, len);
 		}
 	};
 
@@ -148,6 +128,8 @@ namespace z86
 		std::vector<RegionMapping> m_regions;
 
 	public:
+		void addRegion(PhysAddr start, MemoryRegion* region);
+
 		void lock();
 		void unlock();
 
@@ -160,7 +142,7 @@ namespace z86
 		void write32(PhysAddr addr, uint32_t value);
 		void write64(PhysAddr addr, uint64_t value);
 
-		template <typename T> T read(SegmentedAddr addr);
-		template <typename T> void write(SegmentedAddr addr, T value);
+		void read(PhysAddr addr, uint8_t* buf, size_t len);
+		void write(PhysAddr addr, const uint8_t* buf, size_t len);
 	};
 }

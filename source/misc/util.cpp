@@ -18,7 +18,7 @@ namespace z86::util
 		{
 			char buf[128] = { 0 };
 			strerror_r(errno, buf, 127);
-			lg::error("misc", "failed to get filesize for '%s' (error code %d / %s)", path, errno, buf);
+			lg::error("misc", "failed to get filesize for '{}' (error code {} / {})", path, errno, buf);
 
 			return -1;
 		}

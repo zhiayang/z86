@@ -19,7 +19,7 @@ namespace instrad::x86
 		constexpr void setSrc(const Operand& x) { this->m_src = x; this->m_operandCount = 2; }
 		constexpr void setExt(const Operand& x) { this->m_ext = x; this->m_operandCount = 3; }
 		constexpr void setOp4(const Operand& x) { this->m_op4 = x; this->m_operandCount = 4; }
-		constexpr void setBytes(const uint8_t* bytes, size_t n) { this->m_bytes = bytes; this->m_byteCount = n; }
+		constexpr void setLength(size_t n) { this->m_length = n; }
 
 		constexpr void addLockPrefix() { this->m_prefixLock = true; }
 		constexpr void addRepPrefix() { this->m_prefixRep = true; }
@@ -29,6 +29,7 @@ namespace instrad::x86
 		constexpr bool repPrefix() const { return this->m_prefixRep; }
 		constexpr bool repnzPrefix() const { return this->m_prefixRepnz; }
 
+		constexpr size_t length() const { return this->m_length; }
 
 		constexpr const Operand& src() const { return this->m_src; }
 		constexpr const Operand& dst() const { return this->m_dst; }
@@ -37,9 +38,6 @@ namespace instrad::x86
 		constexpr const Op& op() const { return this->m_op; }
 
 		constexpr int operandCount() const { return this->m_operandCount; }
-
-		constexpr const uint8_t* bytes() const { return this->m_bytes; }
-		constexpr size_t numBytes() const { return this->m_byteCount; }
 
 		constexpr const InstrModifiers& mods() const { return this->m_mods; }
 		constexpr void setMods(InstrModifiers mods) { this->m_mods = mods; }
@@ -60,12 +58,12 @@ namespace instrad::x86
 		Operand m_ext = { };
 		Operand m_op4 = { };
 
-		const uint8_t* m_bytes = 0;
-		size_t m_byteCount = 0;
+		size_t m_length = 0;
 
 		InstrModifiers m_mods = { };
 	};
 
+	template <typename Buffer>
 	constexpr Instruction decode(Buffer& xs, InstrModifiers& mods, const TableEntry* table)
 	{
 		// check the main table first
@@ -162,6 +160,7 @@ namespace instrad::x86
 		}
 	}
 
+	template <typename Buffer>
 	constexpr Instruction decode_3dnow(Buffer& buf, InstrModifiers& mods)
 	{
 		// from the AMD manuals, it is evident that all the 3dnow instructions
@@ -182,6 +181,7 @@ namespace instrad::x86
 		return instr;
 	}
 
+	template <typename Buffer>
 	constexpr Instruction decode_VEX(Buffer& buf, InstrModifiers& mods)
 	{
 		// make a fake REX using the bits in the VEX. this ensures that all of our
@@ -267,9 +267,10 @@ namespace instrad::x86
 	};
 
 	// this is mostly a state machine; see figure 1-1 in the AMD manual, volume 3.
+	template <typename Buffer>
 	constexpr Instruction read(Buffer& xs, ExecMode mode)
 	{
-		auto begin = xs.ptr();
+		auto begin = xs.position();
 
 		auto modifiers = InstrModifiers();
 		switch(mode)
@@ -327,9 +328,7 @@ namespace instrad::x86
 			else                        return decode(xs, modifiers, table);
 		}();
 
-		auto len = xs.ptr() - begin;
-
-		ret.setBytes(begin, len);
+		ret.setLength(xs.position() - begin);
 		ret.setMods(modifiers);
 		return ret;
 	}

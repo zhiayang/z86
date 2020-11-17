@@ -13,12 +13,13 @@ namespace instrad
 	{
 		constexpr Buffer(const uint8_t* xs, size_t len) : bytes(xs), idx(0), len(len) { }
 
-		constexpr uint8_t peek() const  { return this->bytes[this->idx]; }
-		constexpr size_t index() const  { return this->idx; }
-		constexpr size_t length() const { return this->len; }
+		constexpr size_t position() const { return this->idx; }
 		constexpr size_t remaining() const { return this->len - this->idx; }
 
-		constexpr const uint8_t* ptr() const { return &this->bytes[this->idx]; }
+		constexpr uint8_t peek() const
+		{
+			return this->bytes[this->idx];
+		}
 
 		constexpr uint8_t pop()
 		{
@@ -26,11 +27,6 @@ namespace instrad
 				return 0;
 
 			return this->bytes[this->idx++];
-		}
-
-		constexpr void skip(size_t n)
-		{
-			this->idx += (n > this->remaining() ? this->remaining() : n);
 		}
 
 		constexpr bool match(uint8_t b)

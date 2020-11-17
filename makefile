@@ -38,9 +38,12 @@ build: all
 all: $(OUTPUT)
 	@mkdir -p build
 
-run: all
+run: all rom/rom.bin
 	@nasm -f bin -o build/test.bin build/test.asm
-	@build/z86 build/test.bin
+	@build/z86 --rom rom/rom.bin --program build/test.bin
+
+rom/rom.bin: rom/rom.asm
+	@nasm -f bin -o rom/rom.bin rom/rom.asm
 
 
 $(OUTPUT): $(COBJ) $(CXXOBJ)

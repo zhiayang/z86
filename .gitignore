@@ -7,3 +7,4 @@ build/
 *.c.d
 *.h.d
 *.h.gch
+*.bin

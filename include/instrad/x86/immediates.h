@@ -11,11 +11,13 @@
 
 namespace instrad::x86
 {
+	template <typename Buffer>
 	constexpr int8_t readSignedImm8(Buffer& buf)
 	{
 		return (int8_t) buf.pop();
 	}
 
+	template <typename Buffer>
 	constexpr int16_t readSignedImm16(Buffer& buf)
 	{
 		uint16_t a = buf.pop();
@@ -24,6 +26,7 @@ namespace instrad::x86
 		return (int16_t) ((a << 0) | (b << 8));
 	}
 
+	template <typename Buffer>
 	constexpr int32_t readSignedImm32(Buffer& buf)
 	{
 		uint32_t a = buf.pop();
@@ -33,6 +36,7 @@ namespace instrad::x86
 		return (int32_t) ((a << 0) | (b << 8) | (c << 16) | (d << 24));
 	}
 
+	template <typename Buffer>
 	constexpr int64_t readSignedImm64(Buffer& buf)
 	{
 		uint64_t a = buf.pop();

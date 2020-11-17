@@ -471,7 +471,7 @@ namespace instrad::x86::tables
 		/*E0*/ entry_1_no_modrm(0xE0, ops::LOOPNZ, OpKind::Rel8Offset),
 		/*E1*/ entry_1_no_modrm(0xE1, ops::LOOPZ,  OpKind::Rel8Offset),
 		/*E2*/ entry_1_no_modrm(0xE2, ops::LOOP,   OpKind::Rel8Offset),
-		/*E3*/ entry_1_no_modrm(0xE3, ops::JECXZ,  OpKind::Rel8Offset),
+		/*E3*/ entry_1_no_modrm(0xE3, ops::JCXZ,   OpKind::Rel8Offset),
 		/*E4*/ entry_2_no_modrm(0xE4, ops::IN,     OpKind::ImplicitAL, OpKind::Imm8),
 		/*E5*/ entry_2_no_modrm(0xE5, ops::IN,     OpKind::ImplicitEAX, OpKind::Imm8),
 		/*E6*/ entry_2_no_modrm(0xE6, ops::OUT,    OpKind::Imm8, OpKind::ImplicitAL),

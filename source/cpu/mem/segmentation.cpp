@@ -20,6 +20,22 @@ namespace z86
 		return desc->base;
 	}
 
+	void SegmentedMMU::reset()
+	{
+		// AMD Manual, vol 2, 14.1.5
+		// Fetching the First Instruction
+		// for the code segment, its selector is 0xF000, but the base is 0xFFFF0000. weirdchamp.
+		m_cached_cs.base = 0xFFFF'0000;
+		m_cached_cs.limit = 0xFFFF;
+
+		// the rest are simple.
+		m_cached_ds.base = 0; m_cached_ds.limit = 0xFFFF;
+		m_cached_es.base = 0; m_cached_es.limit = 0xFFFF;
+		m_cached_fs.base = 0; m_cached_fs.limit = 0xFFFF;
+		m_cached_gs.base = 0; m_cached_gs.limit = 0xFFFF;
+		m_cached_ss.base = 0; m_cached_ss.limit = 0xFFFF;
+	}
+
 	void SegmentedMMU::load(SegReg sr, uint16_t sel)
 	{
 		switch(sr)

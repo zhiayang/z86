@@ -77,6 +77,7 @@ namespace instrad::x86
 	}
 
 
+	template <typename Buffer>
 	constexpr MemoryRef decodeSIB(Buffer& buf, const InstrModifiers& mods, bool* didReadDisplacement)
 	{
 		auto sib = buf.pop();
@@ -137,6 +138,7 @@ namespace instrad::x86
 		return mem;
 	}
 
+	template <typename Buffer>
 	constexpr MemoryRef decodeVSIB(Buffer& buf, size_t vectorRegBits, const InstrModifiers& mods)
 	{
 		auto vsib = buf.pop();
@@ -214,6 +216,7 @@ namespace instrad::x86
 		}
 	}
 
+	template <typename Buffer>
 	constexpr MemoryRef getMemoryOperand(Buffer& buf, size_t bits, const InstrModifiers& mods)
 	{
 		// we need to handle "promotion".
@@ -364,6 +367,7 @@ namespace instrad::x86
 		return wrapper().setSegment(getSegmentOfOverride(mods.segmentOverride));
 	}
 
+	template <typename Buffer>
 	constexpr Operand getRegisterOrMemoryOperand(Buffer& buf, size_t regBits, size_t memBits, const InstrModifiers& mods, RegKind rk)
 	{
 		if(mods.directRegisterIndex)
@@ -393,6 +397,7 @@ namespace instrad::x86
 		else                            return 64;
 	}
 
+	template <typename Buffer>
 	constexpr Operand getOperand(Buffer& buf, OpKind kind, InstrModifiers& mods)
 	{
 		switch(kind)

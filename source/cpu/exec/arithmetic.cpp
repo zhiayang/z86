@@ -30,11 +30,9 @@ namespace z86
 
 	static inline void set_PZS(CPU& cpu, Value& ret)
 	{
-		zpr::println("bits = {}, sign = {}", ret.bits(), ret.sign());
 		cpu.flags().setPF(ret.parity());
 		cpu.flags().setZF(ret.zero());
 		cpu.flags().setSF(ret.sign());
-		zpr::println("SF = {}", cpu.flags().SF());
 	}
 
 
