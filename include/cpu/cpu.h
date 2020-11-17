@@ -181,6 +181,8 @@ namespace z86
 		static constexpr size_t IDX_SS = 5;
 
 	public:
+		void memLock();
+		void memUnlock();
 
 		uint8_t read8(uint64_t address);
 		uint16_t read16(uint64_t address);

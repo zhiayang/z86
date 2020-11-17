@@ -148,6 +148,9 @@ namespace z86
 		std::vector<RegionMapping> m_regions;
 
 	public:
+		void lock();
+		void unlock();
+
 		uint8_t read8(PhysAddr addr);
 		uint16_t read16(PhysAddr addr);
 		uint32_t read32(PhysAddr addr);

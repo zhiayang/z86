@@ -23,6 +23,9 @@ namespace z86
 			delete reg.region;
 	}
 
+	void MemoryController::lock() { }
+	void MemoryController::unlock() { }
+
 	static inline bool contains(MemoryController::RegionMapping& region, PhysAddr addr)
 	{
 		return region.start.addr <= addr.addr && addr.addr <= region.start.addr + region.length;

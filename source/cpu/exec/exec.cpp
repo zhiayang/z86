@@ -12,6 +12,7 @@ namespace z86
 	using Instruction = instrad::x86::Instruction;
 	using InstrMods = instrad::x86::InstrModifiers;
 
+	void op_inc_dec(CPU& cpu, const instrad::x86::Op& op, const InstrMods& mods, const Operand& dst);
 	void op_arithmetic(CPU& cpu, const instrad::x86::Op& op, const InstrMods& mods, const Operand& dst, const Operand& src);
 
 	static void op_mov(CPU& cpu, const InstrMods& mods, const Operand& dst, const Operand& src);
@@ -21,6 +22,9 @@ namespace z86
 	void Executor::execute(const Instruction& instr)
 	{
 		using namespace instrad::x86;
+
+		if(instr.lockPrefix())
+			m_cpu.memLock();
 
 		auto& op = instr.op();
 		switch(op.id())
@@ -33,24 +37,33 @@ namespace z86
 			case ops::OR.id():
 			case ops::XOR.id():
 			case ops::CMP.id():
-				op_arithmetic(this->m_cpu, op, instr.mods(), instr.dst(), instr.src());
+			case ops::TEST.id():
+				op_arithmetic(m_cpu, op, instr.mods(), instr.dst(), instr.src());
+				break;
+
+			case ops::INC.id():
+			case ops::DEC.id():
+				op_inc_dec(m_cpu, op, instr.mods(), instr.dst());
 				break;
 
 			case ops::MOV.id():
-				op_mov(this->m_cpu, instr.mods(), instr.dst(), instr.src());
+				op_mov(m_cpu, instr.mods(), instr.dst(), instr.src());
 				break;
 
 			case ops::PUSH.id():
-				op_push(this->m_cpu, instr.mods(), instr.dst());
+				op_push(m_cpu, instr.mods(), instr.dst());
 				break;
 
 			case ops::POP.id():
-				op_pop(this->m_cpu, instr.mods(), instr.dst());
+				op_pop(m_cpu, instr.mods(), instr.dst());
 				break;
 
 			default:
 				assert(false && "invalid opcode");
 		}
+
+		if(instr.lockPrefix())
+			m_cpu.memUnlock();
 	}
 
 	static int get_operand_size(CPU& cpu, const InstrMods& mods)
@@ -81,7 +94,7 @@ namespace z86
 		return static_cast<SegReg>(idx & 0x7);
 	}
 
-	static std::pair<SegReg, uint64_t> resolve_mem(CPU& cpu, const InstrMods& mods, const Operand& op)
+	static std::pair<SegReg, uint64_t> resolve_mem(CPU& cpu, const Operand& op)
 	{
 		auto seg = SegReg::DS;
 		uint64_t ofs = 0;
@@ -140,9 +153,7 @@ namespace z86
 		}
 		else if(op.isMemory())
 		{
-			auto [ seg, ofs ] = resolve_mem(cpu, mods, op);
-			zpr::println("seg: {}, ofs: {x} ({x})", seg, ofs, cpu.es());
-
+			auto [ seg, ofs ] = resolve_mem(cpu, op);
 			switch(get_operand_size(cpu, mods))
 			{
 				case 16: return cpu.read16(seg, ofs);
@@ -168,7 +179,7 @@ namespace z86
 		}
 		else if(op.isMemory())
 		{
-			auto [ seg, ofs ] = resolve_mem(cpu, mods, op);
+			auto [ seg, ofs ] = resolve_mem(cpu, op);
 			switch(get_operand_size(cpu, mods))
 			{
 				case 16: cpu.write16(seg, ofs, value.u16()); return;
@@ -207,7 +218,6 @@ namespace z86
 			case CPUMode::Long: ofs = (cpu.rsp() -= decr); break;
 		}
 
-		zpr::println("ofs = {x}, decr = {}, val = {x}", ofs, decr, src_val.u16());
 		switch(decr)
 		{
 			case 2: return cpu.write16(SegReg::SS, ofs, src_val.u16());
@@ -230,7 +240,6 @@ namespace z86
 			case CPUMode::Long: ofs = cpu.rsp(), cpu.rsp() += incr; break;
 		}
 
-		zpr::println("ofs = {x}, incr = {}", ofs, incr);
 		switch(incr)
 		{
 			case 2: return set_operand(cpu, mods, dst, cpu.read16(SegReg::SS, ofs));

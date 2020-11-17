@@ -23,7 +23,7 @@ static void dump(z86::CPU& cpu)
 		zpr::println("es:    {4.2x}    fs:    {4.2x}", cpu.es(), cpu.fs());
 		zpr::println("gs:    {4.2x}", cpu.gs());
 		zpr::println("flags: {016b}", cpu.flags().flags());
-		zpr::println("           ODITSZ A P C", cpu.flags().flags());
+		zpr::println("           ODITSZ A P C");
 		zpr::println("");
 	}
 }

@@ -10,6 +10,9 @@ namespace z86
 	{
 	}
 
+	void CPU::memLock() { m_memory.lock(); }
+	void CPU::memUnlock() { m_memory.unlock(); }
+
 	uint8_t  CPU::read8(uint64_t address)  { return this->read8(SegReg::DS, address); }
 	uint16_t CPU::read16(uint64_t address) { return this->read16(SegReg::DS, address); }
 	uint32_t CPU::read32(uint64_t address) { return this->read32(SegReg::DS, address); }
