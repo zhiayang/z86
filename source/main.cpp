@@ -77,22 +77,8 @@ int main(int argc, char** argv)
 	cpu.memory().addRegion(PhysAddr(0xFFFF0000), rom);
 	cpu.memory().write(PhysAddr(0x7C00), prog_ptr, prog_len);
 
-	cpu.start();
-
-
-
-
 	delete[] rom_ptr;
 	delete[] prog_ptr;
 
-
-
-	// while(buf.remaining() > 0)
-	// {
-	// 	auto instr = instrad::x86::read(buf, instrad::x86::ExecMode::Legacy);
-	// 	zpr::println("{}", z86::print_att(instr, cpu.ip(), 0, 8));
-
-	// 	cpu.m_exec.execute(instr);
-	// 	dump(cpu);
-	// }
+	cpu.start();
 }

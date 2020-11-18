@@ -13,6 +13,8 @@ namespace z86
 	using Instruction = instrad::x86::Instruction;
 	using InstrMods = instrad::x86::InstrModifiers;
 
+	// jump.cpp
+	void op_jcxz(CPU& cpu, const InstrMods& mods, const Operand& dst);
 	void op_jmp(CPU& cpu, const InstrMods& mods, const Operand& dst);
 	void op_jo(CPU& cpu, const InstrMods& mods, const Operand& dst, bool check);
 	void op_js(CPU& cpu, const InstrMods& mods, const Operand& dst, bool check);
@@ -22,15 +24,23 @@ namespace z86
 	void op_jl(CPU& cpu, const InstrMods& mods, const Operand& dst, bool check);
 	void op_jg(CPU& cpu, const InstrMods& mods, const Operand& dst, bool check);
 	void op_jc(CPU& cpu, const InstrMods& mods, const Operand& dst, bool check);
-	void op_jcxz(CPU& cpu, const InstrMods& mods, const Operand& dst);
 
+	// arithmetic.cpp
 	void op_inc_dec(CPU& cpu, const instrad::x86::Op& op, const InstrMods& mods, const Operand& dst);
 	void op_arithmetic(CPU& cpu, const instrad::x86::Op& op, const InstrMods& mods, const Operand& dst, const Operand& src);
 
+	// adjust.cpp
+	void op_daa(CPU& cpu);
+	void op_das(CPU& cpu);
+	void op_aaa(CPU& cpu);
+	void op_aas(CPU& cpu);
+	void op_aad(CPU& cpu, uint8_t base);
+	void op_aam(CPU& cpu, uint8_t base);
+
 	static void op_xchg(CPU& cpu, const InstrMods& mods, const Operand& dst, const Operand& src);
 	static void op_mov(CPU& cpu, const InstrMods& mods, const Operand& dst, const Operand& src);
-	static void op_push(CPU& cpu, const InstrMods& mods, const Operand& src);
 	static void op_pop(CPU& cpu, const InstrMods& mods, const Operand& dst);
+	static void op_push(CPU& cpu, const InstrMods& mods, const Operand& src);
 
 	void Executor::execute(const Instruction& instr)
 	{
@@ -74,6 +84,33 @@ namespace z86
 			case ops::XCHG.id():
 				op_xchg(m_cpu, instr.mods(), instr.dst(), instr.src());
 				break;
+
+
+
+			case ops::DAA.id():
+				op_daa(m_cpu);
+				break;
+
+			case ops::DAS.id():
+				op_das(m_cpu);
+				break;
+
+			case ops::AAA.id():
+				op_aaa(m_cpu);
+				break;
+
+			case ops::AAS.id():
+				op_aas(m_cpu);
+				break;
+
+			case ops::AAM.id():
+				op_aam(m_cpu, instr.dst().imm() & 0xFF);
+				break;
+
+			case ops::AAD.id():
+				op_aad(m_cpu, instr.dst().imm() & 0xFF);
+				break;
+
 
 
 			// uwu
