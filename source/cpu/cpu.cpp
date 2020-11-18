@@ -15,10 +15,10 @@ namespace z86
 			zpr::println("cx:    {4.2x}    dx:    {4.2x}", cpu.cx(), cpu.dx());
 			zpr::println("di:    {4.2x}    si:    {4.2x}", cpu.di(), cpu.si());
 			zpr::println("bp:    {4.2x}    sp:    {4.2x}", cpu.bp(), cpu.sp());
-			zpr::println("ip:    {4.2x}    cs:    {4.2x}", cpu.ip(), cpu.cs());
-			zpr::println("ds:    {4.2x}    ss:    {4.2x}", cpu.ds(), cpu.ss());
-			zpr::println("es:    {4.2x}    fs:    {4.2x}", cpu.es(), cpu.fs());
-			zpr::println("gs:    {4.2x}", cpu.gs());
+			zpr::println("cs:    {4.2x}    ip:    {4.2x}", cpu.cs().get(), cpu.ip());
+			zpr::println("ds:    {4.2x}    ss:    {4.2x}", cpu.ds().get(), cpu.ss().get());
+			zpr::println("es:    {4.2x}    fs:    {4.2x}", cpu.es().get(), cpu.fs().get());
+			zpr::println("gs:    {4.2x}", cpu.gs().get());
 			zpr::println("flags: {016b}", cpu.flags().flags());
 			zpr::println("           ODITSZ A P C");
 			zpr::println("");
@@ -146,6 +146,18 @@ namespace z86
 	void CPU::write32(SegReg seg, uint64_t address, uint32_t value) { return m_smmu.write32(SegmentedAddr(seg, address), value); }
 	void CPU::write64(SegReg seg, uint64_t address, uint64_t value) { return m_smmu.write64(SegmentedAddr(seg, address), value); }
 
+	static void segment_loader(CPU* cpu, short idx, uint16_t val)
+	{
+		cpu->smmu().load(static_cast<SegReg>(idx & 0x7), val);
+	}
+
+	RegWrapper<uint16_t> CPU::cs() { return RegWrapper<uint16_t>(this, IDX_CS, m_segment_regs[IDX_CS], &segment_loader); }
+	RegWrapper<uint16_t> CPU::ds() { return RegWrapper<uint16_t>(this, IDX_DS, m_segment_regs[IDX_DS], &segment_loader); }
+	RegWrapper<uint16_t> CPU::es() { return RegWrapper<uint16_t>(this, IDX_ES, m_segment_regs[IDX_ES], &segment_loader); }
+	RegWrapper<uint16_t> CPU::fs() { return RegWrapper<uint16_t>(this, IDX_FS, m_segment_regs[IDX_FS], &segment_loader); }
+	RegWrapper<uint16_t> CPU::gs() { return RegWrapper<uint16_t>(this, IDX_GS, m_segment_regs[IDX_GS], &segment_loader); }
+	RegWrapper<uint16_t> CPU::ss() { return RegWrapper<uint16_t>(this, IDX_SS, m_segment_regs[IDX_SS], &segment_loader); }
+
 	RegWrapper<uint8_t> CPU::reg8(const instrad::x86::Register& reg)
 	{
 		using namespace instrad::x86;
@@ -171,9 +183,7 @@ namespace z86
 		auto idx = reg.index();
 		if(idx & regs::REG_FLAG_SEGMENT)
 		{
-			return RegWrapper<uint16_t>(this, idx, m_segment_regs[idx & 0x7], [](CPU* cpu, short idx, uint16_t val){
-				cpu->m_smmu.load(static_cast<SegReg>(idx & 0x7), val);
-			});
+			return RegWrapper<uint16_t>(this, idx, m_segment_regs[idx & 0x7], &segment_loader);
 		}
 		else if(idx >= 0 && idx < 16)
 		{

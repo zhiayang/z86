@@ -196,9 +196,9 @@ namespace instrad::x86::tables
 		/*0*/ entry_1(0xFF, ops::INC,  OpKind::RegMemNative),
 		/*1*/ entry_1(0xFF, ops::DEC,  OpKind::RegMemNative),
 		/*2*/ entry_1(0xFF, ops::CALL, OpKind::RegMem64),
-		/*3*/ entry_1(0xFF, ops::CALL, OpKind::Ptr16_32),
+		/*3*/ entry_1(0xFF, ops::CALL, OpKind::MemSegOfs),
 		/*4*/ entry_1(0xFF, ops::JMP,  OpKind::RegMem64),
-		/*5*/ entry_1(0xFF, ops::JMP,  OpKind::Ptr16_32),
+		/*5*/ entry_1(0xFF, ops::JMP,  OpKind::MemSegOfs),
 		/*6*/ entry_1(0xFF, ops::PUSH, OpKind::RegMem64),
 
 		/*7*/ entry_blank,
@@ -384,7 +384,7 @@ namespace instrad::x86::tables
 
 		/*98*/ entry_0(0x98, ops::CWDE),
 		/*99*/ entry_0(0x99, ops::CDQ),
-		/*9A*/ entry_1_no_modrm(0x9A, ops::CALLF, OpKind::Ptr16_32),      // far call, invalid in 64-bit
+		/*9A*/ entry_1_no_modrm(0x9A, ops::CALL, OpKind::ImmSegOfs),
 		/*9B*/ entry_0(0x9B, ops::FWAIT),
 		/*9C*/ entry_0(0x9C, ops::PUSHF),
 		/*9D*/ entry_0(0x9D, ops::POPF),
@@ -433,8 +433,8 @@ namespace instrad::x86::tables
 		/*C1*/ entry_ext(0xC1, &ModRMExt_C1[0]),
 		/*C2*/ entry_1_no_modrm(0xC2, ops::RET, OpKind::Imm16),
 		/*C3*/ entry_0(0xC3, ops::RET),
-		/*C4*/ entry_blank,                                               // vector extension escape sequence
-		/*C5*/ entry_blank,                                               // vector extension escape sequence
+		/*C4*/ entry_2(0xC4, ops::LES, OpKind::RegNative, OpKind::MemSegOfs),   // C4 and C5 are VEX escape sequences, but they are also
+		/*C5*/ entry_2(0xC5, ops::LDS, OpKind::RegNative, OpKind::MemSegOfs),   // LES and LDS; the decoder frontend will handle it.
 		/*C6*/ entry_ext(0xC6, &ModRMExt_C6[0]),
 		/*C7*/ entry_ext(0xC7, &ModRMExt_C7[0]),
 
@@ -479,12 +479,12 @@ namespace instrad::x86::tables
 
 		/*E8*/ entry_1_no_modrm(0xE8, ops::CALL, OpKind::RelNative_16or32_Offset),
 		/*E9*/ entry_1_no_modrm(0xE9, ops::JMP,  OpKind::RelNative_16or32_Offset),
-		/*EA*/ entry_blank,
-		/*EB*/ entry_1_no_modrm(0xEB, ops::JMP, OpKind::Rel8Offset),
-		/*EC*/ entry_2_no_modrm(0xEC, ops::IN,  OpKind::ImplicitAL,  OpKind::ImplicitDX),
-		/*ED*/ entry_2_no_modrm(0xED, ops::IN,  OpKind::ImplicitEAX, OpKind::ImplicitDX),
-		/*EE*/ entry_2_no_modrm(0xEE, ops::OUT, OpKind::ImplicitDX,  OpKind::ImplicitAL),
-		/*EF*/ entry_2_no_modrm(0xEF, ops::OUT, OpKind::ImplicitDX,  OpKind::ImplicitEAX),
+		/*EA*/ entry_1_no_modrm(0xEA, ops::JMP,  OpKind::ImmSegOfs),
+		/*EB*/ entry_1_no_modrm(0xEB, ops::JMP,  OpKind::Rel8Offset),
+		/*EC*/ entry_2_no_modrm(0xEC, ops::IN,   OpKind::ImplicitAL,  OpKind::ImplicitDX),
+		/*ED*/ entry_2_no_modrm(0xED, ops::IN,   OpKind::ImplicitEAX, OpKind::ImplicitDX),
+		/*EE*/ entry_2_no_modrm(0xEE, ops::OUT,  OpKind::ImplicitDX,  OpKind::ImplicitAL),
+		/*EF*/ entry_2_no_modrm(0xEF, ops::OUT,  OpKind::ImplicitDX,  OpKind::ImplicitEAX),
 
 		/*F0*/ entry_blank,                                               // lock prefix
 		/*F1*/ entry_0(0xF1, ops::ICEBP),

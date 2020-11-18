@@ -1301,10 +1301,10 @@ namespace instrad::x86::tables
 
 		/*B0*/ entry_2(0xB0, ops::CMPXCHG, OpKind::RegMem8, OpKind::Reg8),
 		/*B1*/ entry_2(0xB1, ops::CMPXCHG, OpKind::RegMem32, OpKind::Reg32),
-		/*B2*/ entry_2(0xB2, ops::LSS,     OpKind::Reg32, OpKind::Ptr16_32),
+		/*B2*/ entry_2(0xB2, ops::LSS,     OpKind::RegNative, OpKind::MemSegOfs),
 		/*B3*/ entry_2(0xB3, ops::BTR,     OpKind::RegMem32, OpKind::Reg32),
-		/*B4*/ entry_2(0xB4, ops::LFS,     OpKind::Reg32, OpKind::Ptr16_32),
-		/*B5*/ entry_2(0xB5, ops::LGS,     OpKind::Reg32, OpKind::Ptr16_32),
+		/*B4*/ entry_2(0xB4, ops::LFS,     OpKind::RegNative, OpKind::MemSegOfs),
+		/*B5*/ entry_2(0xB5, ops::LGS,     OpKind::RegNative, OpKind::MemSegOfs),
 		/*B6*/ entry_2(0xB6, ops::MOVZX,   OpKind::Reg32, OpKind::RegMem8),
 		/*B7*/ entry_2(0xB7, ops::MOVZX,   OpKind::Reg32, OpKind::RegMem16),
 

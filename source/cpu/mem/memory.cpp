@@ -114,7 +114,7 @@ namespace z86
 	uint8_t MemoryController::read8(PhysAddr addr)
 	{
 		auto r = find_region(m_regions, addr);
-		assert(r && "out of bounds memory read");
+		if(!r) lg::fatal("mem", "out of bounds memory read: {#x}", addr.addr);
 
 		return r->region->read8(addr.addr - r->start.addr);
 	}
@@ -122,7 +122,7 @@ namespace z86
 	uint16_t MemoryController::read16(PhysAddr addr)
 	{
 		auto r = find_region(m_regions, addr);
-		assert(r && "out of bounds memory read");
+		if(!r) lg::fatal("mem", "out of bounds memory read: {#x}", addr.addr);
 
 		return r->region->read16(addr.addr - r->start.addr);
 	}
@@ -130,7 +130,7 @@ namespace z86
 	uint32_t MemoryController::read32(PhysAddr addr)
 	{
 		auto r = find_region(m_regions, addr);
-		assert(r && "out of bounds memory read");
+		if(!r) lg::fatal("mem", "out of bounds memory read: {#x}", addr.addr);
 
 		return r->region->read32(addr.addr - r->start.addr);
 	}
@@ -138,7 +138,7 @@ namespace z86
 	uint64_t MemoryController::read64(PhysAddr addr)
 	{
 		auto r = find_region(m_regions, addr);
-		assert(r && "out of bounds memory read");
+		if(!r) lg::fatal("mem", "out of bounds memory read: {#x}", addr.addr);
 
 		return r->region->read64(addr.addr - r->start.addr);
 	}
@@ -146,7 +146,7 @@ namespace z86
 	void MemoryController::write8(PhysAddr addr, uint8_t value)
 	{
 		auto r = find_region(m_regions, addr);
-		assert(r && "out of bounds memory read");
+		if(!r) lg::fatal("mem", "out of bounds memory write: {#x}", addr.addr);
 
 		r->region->write8(addr.addr - r->start.addr, value);
 	}
@@ -154,7 +154,7 @@ namespace z86
 	void MemoryController::write16(PhysAddr addr, uint16_t value)
 	{
 		auto r = find_region(m_regions, addr);
-		assert(r && "out of bounds memory read");
+		if(!r) lg::fatal("mem", "out of bounds memory write: {#x}", addr.addr);
 
 		r->region->write16(addr.addr - r->start.addr, value);
 	}
@@ -162,7 +162,7 @@ namespace z86
 	void MemoryController::write32(PhysAddr addr, uint32_t value)
 	{
 		auto r = find_region(m_regions, addr);
-		assert(r && "out of bounds memory read");
+		if(!r) lg::fatal("mem", "out of bounds memory write: {#x}", addr.addr);
 
 		r->region->write16(addr.addr - r->start.addr, value);
 	}
@@ -170,7 +170,7 @@ namespace z86
 	void MemoryController::write64(PhysAddr addr, uint64_t value)
 	{
 		auto r = find_region(m_regions, addr);
-		assert(r && "out of bounds memory read");
+		if(!r) lg::fatal("mem", "out of bounds memory write: {#x}", addr.addr);
 
 		r->region->write64(addr.addr - r->start.addr, value);
 	}

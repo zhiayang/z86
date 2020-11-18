@@ -218,7 +218,7 @@ namespace z86
 		void jump(uint64_t ip);
 
 		MemoryController& memory() { return m_memory; }
-
+		SegmentedMMU& smmu() { return m_smmu; }
 
 		// accessor spam.
 		// flags register
@@ -236,12 +236,12 @@ namespace z86
 		}
 
 		// segment registers
-		inline uint16_t cs() const      { return this->m_segment_regs[IDX_CS]; }
-		inline uint16_t ds() const      { return this->m_segment_regs[IDX_DS]; }
-		inline uint16_t es() const      { return this->m_segment_regs[IDX_ES]; }
-		inline uint16_t fs() const      { return this->m_segment_regs[IDX_FS]; }
-		inline uint16_t gs() const      { return this->m_segment_regs[IDX_GS]; }
-		inline uint16_t ss() const      { return this->m_segment_regs[IDX_SS]; }
+		RegWrapper<uint16_t> cs();
+		RegWrapper<uint16_t> ds();
+		RegWrapper<uint16_t> es();
+		RegWrapper<uint16_t> fs();
+		RegWrapper<uint16_t> gs();
+		RegWrapper<uint16_t> ss();
 
 		// GPRS
 		// 8-bit registers (high)

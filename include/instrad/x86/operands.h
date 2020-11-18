@@ -97,19 +97,19 @@ namespace instrad::x86
 			if(mods.modrm.mod() == 0)
 			{
 				mem.setBase(regs::NONE);
-				mem.setDisplacement(readSignedImm32(buf));
+				mem.setDisplacement(readUnsignedImm32(buf));
 				*didReadDisplacement = true;
 			}
 			else if(mods.modrm.mod() == 1)
 			{
 				mem.setBase(mods.rex.B() ? regs::R13 : ((compat || mods.addressSizeOverride) ? regs::EBP : regs::RBP));
-				mem.setDisplacement(readSignedImm8(buf));
+				mem.setDisplacement(readUnsignedImm8(buf));
 				*didReadDisplacement = true;
 			}
 			else if(mods.modrm.mod() == 2)
 			{
 				mem.setBase(mods.rex.B() ? regs::R13 : ((compat || mods.addressSizeOverride) ? regs::EBP : regs::RBP));
-				mem.setDisplacement(readSignedImm32(buf));
+				mem.setDisplacement(readUnsignedImm32(buf));
 				*didReadDisplacement = true;
 			}
 			else
@@ -158,11 +158,11 @@ namespace instrad::x86
 		if(mods.modrm.mod() == 0)
 		{
 			mem.setBase(regs::NONE);
-			mem.setDisplacement(readSignedImm32(buf));
+			mem.setDisplacement(readUnsignedImm32(buf));
 		}
 		else if(mods.modrm.mod() == 1)
 		{
-			mem.setDisplacement(readSignedImm8(buf));
+			mem.setDisplacement(readUnsignedImm8(buf));
 			mem.setBase(mods.compatibilityMode
 				? regs::get32Bit(base)
 				: regs::get64Bit(base)
@@ -170,7 +170,7 @@ namespace instrad::x86
 		}
 		else if(mods.modrm.mod() == 2)
 		{
-			mem.setDisplacement(readSignedImm32(buf));
+			mem.setDisplacement(readUnsignedImm32(buf));
 			mem.setBase(mods.compatibilityMode
 				? regs::get32Bit(base)
 				: regs::get64Bit(base)
@@ -248,7 +248,7 @@ namespace instrad::x86
 						case 3: return MemoryRef(bits, regs::BP, regs::DI);
 						case 4: return MemoryRef(bits, regs::SI);
 						case 5: return MemoryRef(bits, regs::DI);
-						case 6: return MemoryRef(bits, readSignedImm16(buf));
+						case 6: return MemoryRef(bits, readUnsignedImm16(buf));
 						case 7: return MemoryRef(bits, regs::BX);
 					}
 				}
@@ -263,10 +263,10 @@ namespace instrad::x86
 					{
 						// in 64-bit mode, this becomes rip-relative addressing. if not, it is just disp32.
 						if(compat)
-							return MemoryRef(bits, readSignedImm32(buf));
+							return MemoryRef(bits, readUnsignedImm32(buf));
 
 						else
-							return MemoryRef(bits, regs::RIP, readSignedImm32(buf));
+							return MemoryRef(bits, regs::RIP, readUnsignedImm32(buf));
 					}
 					else
 					{
@@ -283,7 +283,7 @@ namespace instrad::x86
 				// if 16-bit addressing:
 				if(mods.legacyAddressingMode)
 				{
-					auto imm = readSignedImm8(buf);
+					auto imm = readUnsignedImm8(buf);
 					switch(mods.modrm.rm())
 					{
 						// note: scale should be 1
@@ -303,13 +303,13 @@ namespace instrad::x86
 					{
 						bool disp = false;
 						auto ret = decodeSIB(buf, mods, &disp).setBits(bits);
-						if(!disp) ret.setDisplacement(readSignedImm8(buf));
+						if(!disp) ret.setDisplacement(readUnsignedImm8(buf));
 
 						return ret;
 					}
 					else
 					{
-						auto imm = readSignedImm8(buf);
+						auto imm = readUnsignedImm8(buf);
 
 						if(compat || mods.addressSizeOverride)
 							return MemoryRef(bits, regs::get32Bit(baseRegIndex), imm);
@@ -324,7 +324,7 @@ namespace instrad::x86
 				// if 16-bit addressing:
 				if(mods.legacyAddressingMode)
 				{
-					auto imm = readSignedImm16(buf);
+					auto imm = readUnsignedImm16(buf);
 					switch(mods.modrm.rm())
 					{
 						// note: scale should be 1
@@ -344,13 +344,13 @@ namespace instrad::x86
 					{
 						bool disp = false;
 						auto ret = decodeSIB(buf, mods, &disp).setBits(bits);
-						if(!disp) ret.setDisplacement(readSignedImm32(buf));
+						if(!disp) ret.setDisplacement(readUnsignedImm32(buf));
 
 						return ret;
 					}
 					else
 					{
-						auto imm = readSignedImm32(buf);
+						auto imm = readUnsignedImm32(buf);
 
 						if(compat || mods.addressSizeOverride)
 							return MemoryRef(bits, regs::get32Bit(baseRegIndex), imm);
@@ -602,10 +602,10 @@ namespace instrad::x86
 
 				auto seg = getSegmentOfOverride(mods.segmentOverride);
 				if(mods.compatibilityMode)
-					return MemoryRef(bits, (uint32_t) readSignedImm32(buf)).setSegment(seg);
+					return MemoryRef(bits, readUnsignedImm32(buf)).setSegment(seg);
 
 				else
-					return MemoryRef(bits, (uint64_t) readSignedImm64(buf)).setSegment(seg);
+					return MemoryRef(bits, readUnsignedImm64(buf)).setSegment(seg);
 			}
 
 			case OpKind::MemoryOfsNative: {
@@ -621,14 +621,14 @@ namespace instrad::x86
 				{
 					// in 16-bit, address override bumps to 32; in 32-bit, address override drops to 16
 					if((bits == 16 && mods.addressSizeOverride) || (bits == 32 && !mods.addressSizeOverride))
-						return MemoryRef(membits, (uint32_t) readSignedImm32(buf)).setSegment(seg);
+						return MemoryRef(membits, readUnsignedImm32(buf)).setSegment(seg);
 
 					else
-						return MemoryRef(membits, (uint16_t) readSignedImm16(buf)).setSegment(seg);
+						return MemoryRef(membits, readUnsignedImm16(buf)).setSegment(seg);
 				}
 				else
 				{
-					return MemoryRef(bits, (uint64_t) readSignedImm64(buf)).setSegment(seg);
+					return MemoryRef(bits, readUnsignedImm64(buf)).setSegment(seg);
 				}
 			}
 
@@ -708,11 +708,39 @@ namespace instrad::x86
 			case OpKind::VSIB_Ymm64:
 				return decodeVSIB(buf, 256, mods);
 
+			// this is either a 32-bit value (16+16), or a 48-bit value (16+32). this does not support 80 bit (16+64).
+			// the size is determined by the operand-size override.
+			case OpKind::ImmSegOfs: {
+				int bits = getCurrentBits(mods);
+				if((bits == 16 && mods.operandSizeOverride) || (bits >= 32 && !mods.operandSizeOverride))
+				{
+					auto ofs = readUnsignedImm32(buf);
+					auto seg = readUnsignedImm16(buf);
+					return FarOffset(seg, ofs);
+				}
+				else
+				{
+					auto ofs = readUnsignedImm16(buf);
+					auto seg = readUnsignedImm16(buf);
+					return FarOffset(seg, ofs);
+				}
+			}
 
-			case OpKind::Ptr16_16:
-			case OpKind::Ptr16_32:
-				// not supported
-				return regs::INVALID;
+			// this is either a 32-bit value (16+16), 48-bit (16+32), or 80-bit (16+64). the size is determined by the
+			// operand-size override, and additionally REX.W to get a 64-bit offset.
+			case OpKind::MemSegOfs: {
+				int bits = getCurrentBits(mods);
+				if(mods.rex.W())
+					bits = 64;
+				else if((bits == 16 && mods.operandSizeOverride) || (bits >= 32 && !mods.operandSizeOverride))
+					bits = 32;
+				else
+					bits = 16;
+
+				// while the actual read size is 32/48/80, that'll probably break everything, so just use
+				// 16/32/64 and the extra 16-bits for the segment is implied.
+				return FarOffset(getMemoryOperand(buf, bits, mods));
+			}
 
 			case OpKind::None:
 				return { };

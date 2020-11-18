@@ -9,38 +9,13 @@ namespace z86
 {
 	std::string print_att(const instrad::x86::Instruction& instr, uint64_t ip, size_t marginSz, size_t maxBytes)
 	{
+		std::string instr_prefix = "";
 		std::string instr_suffix = "";
 
 		auto print_operand = [&](const instrad::x86::Operand& op) -> std::string {
-			if(op.isRegister())
-			{
-				return zpr::sprint("%{}", op.reg().name());
-			}
-			else if(op.isImmediate())
-			{
-				int64_t value = op.imm();
-				if(op.immediateSize() == 8)
-					value = (uint8_t) value;
 
-				if(op.immediateSize() == 16)
-					value = (uint16_t) value;
+			auto print_memory = [&instr, &instr_suffix](const instrad::x86::MemoryRef& mem) -> std::string {
 
-				if(op.immediateSize() == 32)
-					value = (uint32_t) value;
-
-				if(op.immediateSize() == 64)
-					value = (uint64_t) value;
-
-				// printf("[%#lx]", op.imm());
-				return zpr::sprint("${#x}", value);
-			}
-			else if(op.isRelativeOffset())
-			{
-				return zpr::sprint("{#x}", ip + instr.length() + op.ofs().offset());
-			}
-			else if(op.isMemory())
-			{
-				auto& mem = op.mem();
 				auto& base = mem.base();
 				auto& idx = mem.index();
 
@@ -74,8 +49,8 @@ namespace z86
 					return segment + zpr::sprint("{#x}", mem.displacement());
 
 				std::string tmp = segment;
-				if(op.mem().displacement() != 0)
-					tmp += zpr::sprint("{#x}", op.mem().displacement());
+				if(mem.displacement() != 0)
+					tmp += zpr::sprint("{#x}", mem.displacement());
 
 				tmp += "(";
 
@@ -85,11 +60,57 @@ namespace z86
 				if(idx.present())
 					tmp += zpr::sprint(", %{}", idx.name());
 
-				if(op.mem().scale() != 1)
-					tmp += zpr::sprint(", {}", op.mem().scale());
+				if(mem.scale() != 1)
+					tmp += zpr::sprint(", {}", mem.scale());
 
 				tmp += ")";
 				return tmp;
+			};
+
+			if(op.isRegister())
+			{
+				return zpr::sprint("%{}", op.reg().name());
+			}
+			else if(op.isImmediate())
+			{
+				int64_t value = op.imm();
+				if(op.immediateSize() == 8)
+					value = (uint8_t) value;
+
+				if(op.immediateSize() == 16)
+					value = (uint16_t) value;
+
+				if(op.immediateSize() == 32)
+					value = (uint32_t) value;
+
+				if(op.immediateSize() == 64)
+					value = (uint64_t) value;
+
+				// printf("[%#lx]", op.imm());
+				return zpr::sprint("${#x}", value);
+			}
+			else if(op.isRelativeOffset())
+			{
+				return zpr::sprint("{#x}", ip + instr.length() + op.ofs().offset());
+			}
+			else if(op.isFarOffset())
+			{
+				// ljmp, lcall
+				instr_prefix = "l";
+
+				auto& far = op.far();
+				if(far.isMemory())
+				{
+					return zpr::sprint("{}", print_memory(far.memory()));
+				}
+				else
+				{
+					return zpr::sprint("{#4.2x}:{#x}", far.segment(), far.offset());
+				}
+			}
+			else if(op.isMemory())
+			{
+				return print_memory(op.mem());
 			}
 
 			return "??";
@@ -145,7 +166,7 @@ namespace z86
 			operands += print_operand(instr.dst());
 		}
 
-		auto istr = prefix + std::string(instr.op().mnemonic()) + instr_suffix;
+		auto istr = prefix + instr_prefix + std::string(instr.op().mnemonic()) + instr_suffix;
 
 		return zpr::sprint("{}{-10} {}", margin, istr, operands);
 	}

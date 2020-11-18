@@ -301,9 +301,28 @@ namespace instrad::x86
 			else if(xs.match(0xF0)) modifiers.lockPrefix = true;
 			else if(xs.match(0xF3)) modifiers.repPrefix = true, modifiers.repnzPrefix = false;
 			else if(xs.match(0xF2)) modifiers.repnzPrefix = true, modifiers.repPrefix = false;
-			else if(xs.match(0xC4)) modifiers.vex = VexPrefix(xs.pop(), xs.pop());
-			else if(xs.match(0xC5)) modifiers.vex = VexPrefix(xs.pop());
-			else                    break;
+			else
+			{
+				// here's the thing: if we're in long mode, then C4 and C5 always decode to a VEX prefix,
+				// and LES/LDS are straight up not supported.
+				// if not, then we need to look at the top 2 bits of the following modRM byte.
+				// if it's 11 (ie. 3), then it signifies a register operand, which is illegal
+				// (in the rm position) for LES and LDS; in that case, we decode a VEX prefix.
+				// if not, we ignore it.
+				if(auto op = xs.peek(); op == 0xC4 || op == 0xC5)
+				{
+					op = xs.pop();
+					if(auto modrm = xs.peek(); mode == ExecMode::Long || ((modrm & 0xC0) == 0xC0))
+					{
+						if(op == 0xC4) modifiers.vex = VexPrefix(xs.pop(), xs.pop());
+						if(op == 0xC5) modifiers.vex = VexPrefix(xs.pop());
+					}
+				}
+				else
+				{
+					break;
+				}
+			}
 		}
 
 		// next, REX prefix.

@@ -15,27 +15,24 @@ namespace instrad::x86
 	struct MemoryRef
 	{
 		constexpr MemoryRef() { }
-
-		constexpr MemoryRef(int bits, int32_t d) : m_bits(bits), m_64BitDisplacement(false), m_displacement(d) { }
-		constexpr MemoryRef(int bits, uint32_t d) : m_bits(bits), m_64BitDisplacement(false), m_displacement(d) { }
-
-		constexpr MemoryRef(int bits, int64_t d) : m_bits(bits), m_64BitDisplacement(true),  m_displacement(d) { }
-		constexpr MemoryRef(int bits, uint64_t d) : m_bits(bits), m_64BitDisplacement(true),  m_displacement(d) { }
+		constexpr MemoryRef(int bits, uint64_t d) : m_bits(bits),
+			m_64BitDisplacement((d & 0xFFFFFFFF'00000000) != 0),
+			m_displacement(d) { }
 
 
 		constexpr MemoryRef(int bits, const Register& b) : m_bits(bits), m_base(b) { }
 
-		constexpr MemoryRef(int bits, const Register& b, int64_t d) : m_bits(bits), m_displacement(d), m_base(b) { }
+		constexpr MemoryRef(int bits, const Register& b, uint64_t d) : m_bits(bits), m_displacement(d), m_base(b) { }
 		constexpr MemoryRef(int bits, const Register& b, const Register& i) : m_bits(bits), m_base(b), m_index(i) { }
 
 		// note: guard against accidentally using a 0 scale.
-		constexpr MemoryRef(int bits, const Register& b, const Register& i, int s, int64_t d)
+		constexpr MemoryRef(int bits, const Register& b, const Register& i, int s, uint64_t d)
 			: m_bits(bits), m_scale(s > 0 ? s : 1), m_displacement(d), m_base(b), m_index(i) { }
 
 		constexpr int bits() const { return this->m_bits; }
 		constexpr int scale() const { return this->m_scale; }
 		constexpr const Register& segment() const { return this->m_segment; }
-		constexpr int64_t displacement() const { return this->m_displacement; }
+		constexpr uint64_t displacement() const { return this->m_displacement; }
 		constexpr const Register& base() const { return this->m_base; }
 		constexpr const Register& index() const { return this->m_index; }
 
@@ -56,7 +53,7 @@ namespace instrad::x86
 		// base + (index * scale) + displacement
 
 		int m_scale = 1;
-		int64_t m_displacement = 0;
+		uint64_t m_displacement = 0;
 		Register m_base = regs::NONE;
 		Register m_index = regs::NONE;
 	};
@@ -74,11 +71,37 @@ namespace instrad::x86
 		int64_t m_ofs;
 	};
 
+	struct FarOffset
+	{
+		constexpr FarOffset(uint16_t seg, uint16_t ofs) : m_isMemory(false), m_segment(seg), m_immediate(ofs) { }
+		constexpr FarOffset(uint16_t seg, uint32_t ofs) : m_isMemory(false), m_segment(seg), m_immediate(ofs) { }
+
+		constexpr FarOffset(MemoryRef ref) : m_isMemory(true), m_memoryRef(ref) { }
+
+		constexpr bool isMemory() const     { return m_isMemory; }
+		constexpr uint16_t segment() const  { return m_segment; }
+		constexpr uint64_t offset() const   { return m_immediate; }
+		constexpr const MemoryRef& memory() const  { return m_memoryRef; }
+
+	private:
+		bool m_isMemory = false;
+
+		union {
+			struct {
+				uint16_t m_segment = 0;
+				uint64_t m_immediate = 0;
+			};
+
+			MemoryRef m_memoryRef;
+		};
+	};
+
 	struct Operand
 	{
 		constexpr Operand() { }
 		constexpr Operand(const MemoryRef& mem) : m_type(TYPE_MEM), m_mem(mem) { }
-		constexpr Operand(const RelOffset& reg) : m_type(TYPE_OFS), m_ofs(reg) { }
+		constexpr Operand(const RelOffset& ofs) : m_type(TYPE_OFS), m_ofs(ofs) { }
+		constexpr Operand(const FarOffset& ofs) : m_type(TYPE_FAR), m_far(ofs) { }
 		constexpr Operand(const Register& reg) : m_type(TYPE_REG), m_reg(reg) { }
 
 		constexpr Operand(int64_t imm) : m_type(TYPE_IMM), m_imm(imm), m_immbits(64) { }
@@ -87,10 +110,12 @@ namespace instrad::x86
 		constexpr Operand(int8_t imm) : m_type(TYPE_IMM), m_imm(imm), m_immbits(8) { }
 
 		constexpr bool isRelativeOffset() const { return this->m_type == TYPE_OFS; }
+		constexpr bool isFarOffset() const { return this->m_type == TYPE_FAR; }
 		constexpr bool isImmediate() const { return this->m_type == TYPE_IMM; }
 		constexpr bool isRegister() const { return this->m_type == TYPE_REG; }
 		constexpr bool isMemory() const { return this->m_type == TYPE_MEM; }
 
+		constexpr const FarOffset& far() const { return this->m_far; }
 		constexpr const RelOffset& ofs() const { return this->m_ofs; }
 		constexpr const MemoryRef& mem() const { return this->m_mem; }
 		constexpr const Register& reg() const { return this->m_reg; }
@@ -106,12 +131,14 @@ namespace instrad::x86
 		constexpr static int TYPE_IMM = 1;
 		constexpr static int TYPE_MEM = 2;
 		constexpr static int TYPE_OFS = 3;
+		constexpr static int TYPE_FAR = 4;
 
 		int m_type = TYPE_IMM;
 		union {
 			Register m_reg;
 			RelOffset m_ofs;
 			MemoryRef m_mem;
+			FarOffset m_far;
 			int64_t m_imm = 0;
 		};
 

@@ -2,6 +2,7 @@
 // Copyright (c) 2020, zhiayang
 // Licensed under the Apache License Version 2.0.
 
+#include "defs.h"
 #include "cpu/cpu.h"
 #include "cpu/exec.h"
 
@@ -148,30 +149,9 @@ namespace z86
 				op_jcxz(m_cpu, instr.mods(), instr.dst());
 				break;
 
-			// constexpr auto JO               = Op(113,  "jo");
-			// constexpr auto JNO              = Op(114,  "jno");
-			// constexpr auto JB               = Op(115,  "jb");
-			// constexpr auto JNB              = Op(116,  "jnb");
-			// constexpr auto JBO              = Op(117,  "jbo");
-			// constexpr auto JZ               = Op(118,  "jz");
-			// constexpr auto JNZ              = Op(119,  "jnz");
-			// constexpr auto JA               = Op(120,  "ja");
-			// constexpr auto JNA              = Op(121,  "jna");
-			// constexpr auto JS               = Op(34,   "js");
-			// constexpr auto JNS              = Op(35,   "jns");
-			// constexpr auto JP               = Op(36,   "jp");
-			// constexpr auto JNP              = Op(37,   "jnp");
-			// constexpr auto JL               = Op(38,   "jl");
-			// constexpr auto JNL              = Op(39,   "jnl");
-			// constexpr auto JLE              = Op(40,   "jle");
-			// constexpr auto JNLE             = Op(41,   "jnle");
-			// constexpr auto JGE              = Op(42,   "jge");
-			// constexpr auto JG               = Op(43,   "jg");
-
-
-
 			default:
-				assert(false && "invalid opcode");
+				lg::fatal("exec", "invalid opcode: {}", print_att(instr, m_cpu.ip(), 0, 1));
+				break;
 		}
 
 		if(instr.lockPrefix())
@@ -192,6 +172,10 @@ namespace z86
 			else if(mods.rex.W())           return 64;
 			else                            return 32;
 		}
+		else
+		{
+			assert(false && "invalid cpu mode");
+		}
 
 		assert(false && "invalid operand size");
 		return 0;
@@ -211,6 +195,10 @@ namespace z86
 			else if(mods.rex.W())           return 64;
 			else                            return 32;
 		}
+		else
+		{
+			assert(false && "invalid cpu mode");
+		}
 
 		assert(false && "invalid address size");
 		return 0;
@@ -226,13 +214,11 @@ namespace z86
 		return static_cast<SegReg>(idx & 0x7);
 	}
 
-	static std::pair<SegReg, uint64_t> resolve_mem(CPU& cpu, const Operand& op)
+	std::pair<SegReg, uint64_t> resolve_memory_access(CPU& cpu, const instrad::x86::MemoryRef& mem)
 	{
 		auto seg = SegReg::DS;
 		uint64_t ofs = 0;
 		uint64_t idx = 0;
-
-		auto& mem = op.mem();
 
 		if(mem.segment().present())
 			seg = convert_sreg(mem.segment());
@@ -252,9 +238,19 @@ namespace z86
 			ofs += mem.base().present() ? cpu.reg64(mem.base()) : 0;
 			idx = mem.index().present() ? cpu.reg64(mem.index()) : 0;
 		}
+		else
+		{
+			assert(false && "invalid cpu mode");
+		}
 
 		ofs += mem.displacement();
 		ofs += idx * mem.scale();
+
+		// a little gross to repeat it here, but whatever...
+		if(cpu.mode() == CPUMode::Real)         ofs &= 0xFFFF;
+		else if(cpu.mode() == CPUMode::Prot)    ofs &= 0xFFFF'FFFF;
+		else if(cpu.mode() == CPUMode::Long)    ofs &= 0xFFFF'FFFF'FFFF'FFFF;
+		else                                    assert(false && "invalid cpu mode");
 
 		return { seg, ofs };
 	}
@@ -286,7 +282,7 @@ namespace z86
 		}
 		else if(op.isMemory())
 		{
-			auto [ seg, ofs ] = resolve_mem(cpu, op);
+			auto [ seg, ofs ] = resolve_memory_access(cpu, op.mem());
 			switch(get_operand_size(cpu, mods))
 			{
 				case 16: return cpu.read16(seg, ofs);
@@ -295,7 +291,12 @@ namespace z86
 			}
 		}
 
-		assert(false);
+		// note: i'm deliberately *NOT* handling FarOffset here,
+		// because it's a little complicated, and in particular we might need to
+		// return 80-bit values, so it's better to just let the (small) handful of
+		// instructions that need it to handle it themselves.
+
+		assert(false && "invalid operand kind");
 		return static_cast<uint64_t>(0);
 	}
 
@@ -312,7 +313,7 @@ namespace z86
 		}
 		else if(op.isMemory())
 		{
-			auto [ seg, ofs ] = resolve_mem(cpu, op);
+			auto [ seg, ofs ] = resolve_memory_access(cpu, op.mem());
 			switch(get_operand_size(cpu, mods))
 			{
 				case 16: cpu.write16(seg, ofs, value.u16()); return;

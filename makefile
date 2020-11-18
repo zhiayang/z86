@@ -33,14 +33,14 @@ SANITISERS  = # -fsanitize=undefined
 .PRECIOUS: $(PRECOMP_GCH)
 
 
-build: all
+build: all rom/rom.bin
 
 all: $(OUTPUT)
 	@mkdir -p build
 
 run: all rom/rom.bin
-	@nasm -f bin -o build/test.bin build/test.asm
-	@build/z86 --rom rom/rom.bin --program build/test.bin
+	@nasm -f bin -o build/test2.bin build/test2.asm
+	@build/z86 --rom rom/rom.bin --program build/test2.bin
 
 rom/rom.bin: rom/rom.asm
 	@nasm -f bin -o rom/rom.bin rom/rom.asm

@@ -100,6 +100,7 @@ namespace z86
 
 	int get_operand_size(CPU& cpu, const instrad::x86::InstrModifiers& mods);
 	int get_address_size(CPU& cpu, const instrad::x86::InstrModifiers& mods);
+	std::pair<SegReg, uint64_t> resolve_memory_access(CPU& cpu, const instrad::x86::MemoryRef& ref);
 
 	Value get_operand(CPU& cpu, const instrad::x86::InstrModifiers& mods, const instrad::x86::Operand& op);
 	void set_operand(CPU& cpu, const instrad::x86::InstrModifiers& mods, const instrad::x86::Operand& op, Value value);

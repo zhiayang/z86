@@ -14,8 +14,63 @@ namespace z86
 
 	static void do_jump(CPU& cpu, const InstrMods& mods, const Operand& dst)
 	{
-		auto ip = get_operand(cpu, mods, dst);
-		cpu.jump(cpu.ip() + ip.u64());
+		// check for far offsets
+		if(dst.isFarOffset())
+		{
+			uint16_t seg = 0;
+			uint64_t ofs = 0;
+
+			auto& far = dst.far();
+			if(far.isMemory())
+			{
+				auto& mem = far.memory();
+				auto [ segreg, ptr ] = resolve_memory_access(cpu, mem);
+
+				// you're not supposed to be able to segment override this, i think...
+				// the ptr comes first
+				switch(mem.bits())
+				{
+					case 16: ofs = cpu.read16(segreg, ptr); break;
+					case 32: ofs = cpu.read32(segreg, ptr); break;
+					case 64: ofs = cpu.read64(segreg, ptr); break;
+					default: assert(false && "invalid operand size");
+				}
+
+				// then the segment offset.
+				seg = cpu.read16(segreg, ptr + (mem.bits() / 8));
+			}
+			else
+			{
+				seg = far.segment();
+				ofs = far.offset();
+			}
+
+			if(cpu.mode() == CPUMode::Real)
+			{
+				// load CS, then jump.
+				cpu.cs() = seg;
+				cpu.jump(static_cast<uint16_t>(ofs));
+			}
+			else if(cpu.mode() == CPUMode::Prot)
+			{
+				// owo
+				assert(false && "unsupported");
+			}
+			else if(cpu.mode() == CPUMode::Long)
+			{
+				// owo
+				assert(false && "unsupported");
+			}
+			else
+			{
+				assert(false && "invalid cpu mode");
+			}
+		}
+		else
+		{
+			auto ip = get_operand(cpu, mods, dst);
+			cpu.jump(cpu.ip() + ip.u64());
+		}
 	}
 
 	void op_jmp(CPU& cpu, const InstrMods& mods, const Operand& dst)

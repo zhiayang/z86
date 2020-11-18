@@ -49,4 +49,28 @@ namespace instrad::x86
 		uint64_t h = buf.pop();
 		return (int64_t) ((a << 0) | (b << 8) | (c << 16) | (d << 24) | (e << 32) | (f << 40) | (g << 48) | (h << 56));
 	}
+
+	template <typename Buffer>
+	constexpr uint8_t readUnsignedImm8(Buffer& buf)
+	{
+		return static_cast<uint8_t>(readSignedImm8(buf));
+	}
+
+	template <typename Buffer>
+	constexpr uint16_t readUnsignedImm16(Buffer& buf)
+	{
+		return static_cast<uint16_t>(readSignedImm16(buf));
+	}
+
+	template <typename Buffer>
+	constexpr uint32_t readUnsignedImm32(Buffer& buf)
+	{
+		return static_cast<uint32_t>(readSignedImm32(buf));
+	}
+
+	template <typename Buffer>
+	constexpr uint64_t readUnsignedImm64(Buffer& buf)
+	{
+		return static_cast<uint64_t>(readSignedImm64(buf));
+	}
 }

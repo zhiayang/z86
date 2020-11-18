@@ -136,8 +136,8 @@ namespace instrad::x86
 		VSIB_Ymm32,
 		VSIB_Ymm64,
 
-		Ptr16_16,       // for far calls and jumps
-		Ptr16_32,
+		ImmSegOfs,   // eg. jmp 0x7C0:0x0
+		MemSegOfs,   // eg. jmp far [si]
 
 		None,
 	};
