@@ -115,7 +115,7 @@ namespace z86
 
 		auto same_sign  = !(a.sign() ^ b.sign());
 		auto sign       = same_sign & a.sign();
-		auto ret        = Value(a.bits(), a.u64() + b.u64());
+		auto ret        = Value(a.bits(), a.u64() + b.u64() + (cpu.flags().CF() ? 1 : 0));
 
 		set_OPZSA(cpu, a, b, ret, sign, same_sign);
 		cpu.flags().setCF((cpu.flags().CF() && (ret.get() == a.get())) || (ret.get() < a.get()));
@@ -128,7 +128,7 @@ namespace z86
 
 		auto same_sign  = !(a.sign() ^ b.sign());
 		auto sign       = same_sign & a.sign();
-		auto ret        = Value(a.bits(), a.u64() - b.u64());
+		auto ret        = Value(a.bits(), a.u64() - b.u64() - (cpu.flags().CF() ? 1 : 0));
 
 		set_OPZSA(cpu, a, b, ret, sign, same_sign);
 		cpu.flags().setCF((cpu.flags().CF() && (ret.get() == a.get())) || (-ret.get() < -a.get()));

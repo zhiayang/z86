@@ -114,11 +114,11 @@ namespace z86
 		if(instr.op() == instrad::x86::ops::HLT)
 			return false;
 
+		// zpr::println("{}", print_intel(instr, this->ip(), 0, 1));
+
 		m_exec.execute(instr);
 
-		zpr::println("{}", print_att(instr, this->ip(), 0, 1));
-		dump(*this);
-
+		// dump(*this);
 		return true;
 	}
 
@@ -165,7 +165,7 @@ namespace z86
 		auto idx = reg.index();
 		if(idx & regs::REG_FLAG_HI_BYTE && (idx & ~regs::REG_FLAG_HI_BYTE) < 4)
 		{
-			return m_gprs[idx & 0x4].high_8;
+			return m_gprs[idx & 0x3].high_8;
 		}
 		else if(idx >= 0 && idx < 16)
 		{
@@ -221,4 +221,34 @@ namespace z86
 		assert(false && "invalid register");
 		return this->rax();
 	}
+
+	ALWAYS_INLINE static uint64_t decr_sp(CPU& cpu, int n)
+	{
+		switch(cpu.mode())
+		{
+			case CPUMode::Real: cpu.sp() -= n;  return static_cast<uint64_t>(cpu.sp());
+			case CPUMode::Prot: cpu.esp() -= n; return static_cast<uint64_t>(cpu.esp());
+			case CPUMode::Long: cpu.rsp() -= n; return static_cast<uint64_t>(cpu.rsp());
+		}
+	}
+
+	ALWAYS_INLINE static uint64_t incr_sp(CPU& cpu, int n)
+	{
+		switch(cpu.mode())
+		{
+			case CPUMode::Real: { auto ret = cpu.sp();  cpu.sp() += n;  return static_cast<uint64_t>(ret); }
+			case CPUMode::Prot: { auto ret = cpu.esp(); cpu.esp() += n; return static_cast<uint64_t>(ret); }
+			case CPUMode::Long: { auto ret = cpu.rsp(); cpu.rsp() += n; return static_cast<uint64_t>(ret); }
+		}
+	}
+
+	void CPU::push8(uint8_t x)      { auto ofs = decr_sp(*this, 1); this->write8(SegReg::SS, ofs, x); }
+	void CPU::push16(uint16_t x)    { auto ofs = decr_sp(*this, 2); this->write16(SegReg::SS, ofs, x); }
+	void CPU::push32(uint32_t x)    { auto ofs = decr_sp(*this, 4); this->write32(SegReg::SS, ofs, x); }
+	void CPU::push64(uint64_t x)    { auto ofs = decr_sp(*this, 8); this->write64(SegReg::SS, ofs, x); }
+
+	uint8_t CPU::pop8()             { auto ofs = incr_sp(*this, 1); return this->read8(SegReg::SS, ofs); }
+	uint16_t CPU::pop16()           { auto ofs = incr_sp(*this, 2); return this->read16(SegReg::SS, ofs); }
+	uint32_t CPU::pop32()           { auto ofs = incr_sp(*this, 4); return this->read32(SegReg::SS, ofs); }
+	uint64_t CPU::pop64()           { auto ofs = incr_sp(*this, 8); return this->read64(SegReg::SS, ofs); }
 }

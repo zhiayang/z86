@@ -78,6 +78,24 @@ namespace z86
 
 		ALWAYS_INLINE void clear()    { this->m_rflags = 0; }
 
+		ALWAYS_INLINE void setFrom(uint8_t byte)
+		{
+			// bits 5, 3, and 1 are ignored -- hence 0xD5.
+			this->m_flags = (this->m_flags & 0xFF00) | (byte & 0xD5) | 0x2;
+		}
+
+		ALWAYS_INLINE void setFrom(uint16_t word)
+		{
+			// bits 5, 3, and 1 are ignored -- hence 0xD5.
+			this->m_flags = (word & 0xD5) | 0x2;
+		}
+
+		ALWAYS_INLINE void setFrom(uint32_t dword)
+		{
+			// bits 5, 3, and 1 are ignored -- hence 0xD5.
+			this->m_eflags = (dword & 0xD5) | 0x2;
+		}
+
 		// bit 1 is supposed to be always 1.
 		ALWAYS_INLINE uint16_t flags() const { return this->m_flags  | 0x2; }
 		ALWAYS_INLINE uint32_t eflags() const { return this->m_eflags | 0x2; }
@@ -242,6 +260,16 @@ namespace z86
 		RegWrapper<uint16_t> fs();
 		RegWrapper<uint16_t> gs();
 		RegWrapper<uint16_t> ss();
+
+		void push8(uint8_t x);
+		void push16(uint16_t x);
+		void push32(uint32_t x);
+		void push64(uint64_t x);
+
+		uint8_t pop8();
+		uint16_t pop16();
+		uint32_t pop32();
+		uint64_t pop64();
 
 		// GPRS
 		// 8-bit registers (high)

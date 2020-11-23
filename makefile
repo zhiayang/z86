@@ -29,7 +29,7 @@ SANITISERS  = # -fsanitize=undefined
 .DEFAULT_GOAL = all
 
 
-.PHONY: all run
+.PHONY: all run test186
 .PRECIOUS: $(PRECOMP_GCH)
 
 
@@ -44,6 +44,9 @@ run: all rom/rom.bin
 
 rom/rom.bin: rom/rom.asm
 	@nasm -f bin -o rom/rom.bin rom/rom.asm
+
+test186: all
+	@tests/80186_tests/run.fish
 
 
 $(OUTPUT): $(COBJ) $(CXXOBJ)

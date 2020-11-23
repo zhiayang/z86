@@ -81,4 +81,18 @@ int main(int argc, char** argv)
 	delete[] prog_ptr;
 
 	cpu.start();
+
+
+
+	// after cpu is done, dump the first 256 bytes of memory to a file.
+	{
+		auto buf = new uint8_t[256];
+		cpu.memory().read(PhysAddr(0), buf, 256);
+
+		auto f = fopen("mem.bin", "w");
+		fwrite(buf, 1, 256, f);
+		fclose(f);
+
+		delete[] buf;
+	}
 }

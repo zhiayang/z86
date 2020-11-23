@@ -61,14 +61,8 @@ namespace z86
 		ALWAYS_INLINE bool parity()
 		{
 			// __builtin_parity returns 1 for odd parity, but parityflag is 1 for even parity.
-			// so, invert it.
-			switch(this->m_bits)
-			{
-				case 8:  return !__builtin_parity(this->u8());
-				case 16: return !__builtin_parity(this->u16());
-				case 32: return !__builtin_parity(this->u32());
-				default: return !__builtin_parity(this->u64());
-			}
+			// so, invert it. also, this is only for the least significant byte!!
+			return !__builtin_parity(this->u8());
 		}
 
 		ALWAYS_INLINE bool zero()
@@ -98,7 +92,7 @@ namespace z86
 		void execute(const instrad::x86::Instruction& instr);
 	};
 
-	int get_operand_size(CPU& cpu, const instrad::x86::InstrModifiers& mods);
+	int get_operand_size(CPU& cpu, const instrad::x86::InstrModifiers& mods, bool default64 = false);
 	int get_address_size(CPU& cpu, const instrad::x86::InstrModifiers& mods);
 	std::pair<SegReg, uint64_t> resolve_memory_access(CPU& cpu, const instrad::x86::MemoryRef& ref);
 

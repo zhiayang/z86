@@ -460,6 +460,24 @@ namespace instrad::x86
 				return readSignedImm8(buf);
 
 			case OpKind::SignExtImm8: {
+				auto bits = getCurrentBits(mods);
+
+				if(bits == 16 || bits == 32)
+				{
+					if(mods.operandSizeOverride == (bits == 16))
+						return (int32_t) readSignedImm8(buf);
+					else
+						return (int16_t) readSignedImm8(buf);
+				}
+				else
+				{
+					if(mods.operandSizeOverride)
+						return (int16_t) readSignedImm8(buf);
+					else if(mods.rex.W())
+						return (int64_t) readSignedImm8(buf);
+					else
+						return (int32_t) readSignedImm8(buf);
+				}
 				if(mods.operandSizeOverride)
 					return (int16_t) readSignedImm8(buf);
 
